@@ -121,6 +121,7 @@ paths:
       parameters:
         - in: query
           name: "id"
+          required: true
           description: (Required) ID for client to delete.
           schema:
             type: string
@@ -165,6 +166,8 @@ paths:
             application/json:
               schema:
                 type: object
+                required:
+                  - scopes
                 properties:
                   scopes:
                     type: array
@@ -201,6 +204,9 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - id
+                - scope
               properties:
                 id:
                   type: string
@@ -230,6 +236,14 @@ paths:
                       }
                     }
           description: Successfully added scopes to client
+        '204':
+          description: Successfully added scopes to client
+        '409':
+          description: Scope already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Unexpected error adding client scopes
           content:
@@ -282,11 +296,6 @@ paths:
         - identityToken: []
       parameters:
         - in: query
-          name: "scope"
-          description: (Required) This is the name of the scope we'd like to get.
-          schema:
-            type: string
-        - in: query
           name: "passthrough"
           description: Optionally include passthrough data
           schema:
@@ -296,6 +305,8 @@ paths:
           content:
             application/json:
               schema:
+                required:
+                  - scopes
                 type: object
                 properties:
                   scopes:
@@ -327,7 +338,7 @@ paths:
       security:
         - identityToken: []
       requestBody:
-        description: id is the unique identifier for the entity in the OpenId Connect Provider for which the scopes are associated with.
+        description: Create scope for a specific client. Identity token is required to validate user is associated with the given client.
         required: true
         content:
           application/json:
@@ -337,8 +348,7 @@ paths:
                 - scope
               properties:
                 scope:
-                  type: string
-                  example:
+                  $ref: '#/components/schemas/Scope'
                 passthrough:
                   type: object
                   example: {
@@ -359,7 +369,15 @@ paths:
                         "UserPoolId": "example-user-pool"
                       }
                     }
-          description: Successfully created scopes
+          description: Successfully created scope
+        '204':
+          description: Successfully created scope
+        '409':
+          description: Scope already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Unexpected error creating scope
           content:

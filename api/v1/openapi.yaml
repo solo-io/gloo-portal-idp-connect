@@ -1,0 +1,431 @@
+info:
+  title: 'Gloo Platform Portal API'
+  version: 1.0.0
+  description: Gloo Platform Portal Self Service Credential Management API
+openapi: 3.0.0
+servers:
+  - url: https://api.gloo-platform-portal.com/v1
+paths:
+  /client:
+    get:
+      description: Retrieves information for a specific client.
+      operationId: GetClient
+      security:
+        - identityToken: []
+      parameters:
+        - in: query
+          name: "id"
+          required: true
+          description: Client id
+          schema:
+            type: string
+        - in: query
+          name: "passthrough"
+          description: Optionally include passthrough data as a json string
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                example: {
+                  ClientName: "test-client",
+                  ClientId: "7bcv24sdded1ig3b5glvlbkcgc",
+                  UserPoolClient: {
+                    AllowedOAuthScopes: [
+                      "email",
+                      "openid"
+                    ],
+                  }
+                }
+          description: Successfully retrieved client information.
+        '500':
+          description: Unexpected error querying for client information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      summary: Gets a client from the OpenId Connect Provider
+      tags:
+        - Clients
+    post:
+      description: Creates a client in the Open Id Connect Provider that the SPI (Server Provider Interface) implementation integrates with.  `glooPortalUser` and `glooPortalTeam` are optional parameters that will link the `clientId` returned with the user/team id if it is provided. In addition, if `clientMetadata` is returned, it will be stored as a json string in the database in case additional client metadata is needed in future requests to get, update, or delete the client. The `clientSecret` is never stored in the database and will only be shown to the user once. Identity token is required to validate user is associated with the given client
+      operationId: CreateClient
+      security:
+        - identityToken: []
+      requestBody:
+        description: Either `glooPortalUserId` or `glooPortalTeamId` needs to be populated. `passthrough` is directly passed to the SPI (Server Provider Interface) implementation that will create the client in the Open Id Connect Provider.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                glooPortalUserId:
+                  type: string
+                  example: "example-developer"
+                glooPortalTeamId:
+                  type: string
+                  example: "example-team"
+                passthrough:
+                  type: object
+                  example: {
+                    ClientName: "example-user-pool-developer-1",
+                  }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  clientId:
+                    type: string
+                    example: a0897e6d0ea94f589c38278bca4e9342
+                  clientSecret:
+                    type: string
+                    example: c94dbd582d594e8aa04934f9c7ef0f52
+                  clientName:
+                    type: string
+                    example: "example-user-pool-developer-1"
+                  clientMetadata:
+                    type: object
+                    example: {}
+                  passthroughResponse:
+                    type: object
+                    example: {
+                      UserPoolClient: {
+                        AllowedOAuthScopes: [
+                          "email",
+                          "openid"
+                        ],
+                      }
+                    }
+          description: Successfully created client
+        '500':
+          description: Unexpected error creating client
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      summary: Creates a client in the OpenId Connect Provider
+      tags:
+        - Clients
+    delete:
+      description: Delete client.
+      operationId: DeleteClient
+      security:
+        - identityToken: []
+      parameters:
+        - in: query
+          name: "id"
+          description: (Required) ID for client to delete.
+          schema:
+            type: string
+        - in: query
+          name: "passthrough"
+          description: Optionally include passthrough data as a json string
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Successfully deleted client.
+        '500':
+          description: Unexpected error deleting client.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      summary: Deletes a client in the OpenId Connect Provider
+      tags:
+        - Clients
+  /client/scopes:
+    get:
+      description: Retrieves scopes for a specific client.
+      operationId: GetClientScopes
+      security:
+        - identityToken: []
+      parameters:
+        - in: query
+          name: "id"
+          required: true
+          description: Client ID to get scopes for
+          schema:
+            type: string
+        - in: query
+          name: "passthrough"
+          description: Optionally include passthrough data as a json string
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  scopes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Scope'
+                  passthroughResponse:
+                    type: object
+                    example: {
+                      "ResourceServer": {
+                        "Identifier": "example-resource-server-id",
+                        "Name": "example-resource-server",
+                        "UserPoolId": "example-user-pool"
+                      }
+                    }
+          description: Successfully retrieved client scopes.
+        '500':
+          description: Unexpected error querying for client scopes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      summary: Gets scopes for a client from the OpenId Connect Provider
+      tags:
+        - Clients
+    post:
+      description: Adds scope to a specific client.
+      operationId: AddClientScope
+      security:
+        - identityToken: []
+      requestBody:
+        description: Add scope for a specific client. Identity token is required to validate user is associated with the given client.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                  example: "example-resource-server-id"
+                scope:
+                  type: string
+                  example: "example-scope"
+                passthrough:
+                  type: object
+                  example: {
+                    UserPoolId: "example-user-pool"
+                  }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  passthroughResponse:
+                    type: object
+                    example: {
+                      "ResourceServer": {
+                        "Identifier": "example-resource-server-id",
+                        "Name": "example-resource-server",
+                        "UserPoolId": "example-user-pool"
+                      }
+                    }
+          description: Successfully added scopes to client
+        '500':
+          description: Unexpected error adding client scopes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      summary: Adds scope to a client in the OpenId Connect Provider
+      tags:
+        - Clients
+    delete:
+      description: Delete scope from client.
+      operationId: DeleteClientScope
+      security:
+        - identityToken: []
+      parameters:
+        - in: query
+          name: "id"
+          required: true
+          description: (Required) Client ID to delete scope for
+          schema:
+            type: string
+        - in: query
+          name: "scope"
+          required: true
+          description: (Required) Scope name to delete
+          schema:
+              type: string
+        - in: query
+          name: "passthrough"
+          description: Optionally include passthrough data as a json string
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Successfully deleted client.
+        '500':
+          description: Unexpected error deleting client.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      summary: Deletes a client in the OpenId Connect Provider
+      tags:
+        - Clients
+  /scopes:
+    get:
+      description: Gets scopes in the Open Id Connect Provider for a unique identifier. Different Identity Providers associate scopes with different entities. In AWS Congito the client scope would be created for a `ResourceServer` for a `UserPool`, in keycloak the client scope would be created for a `Realm`, in Okta a client scope would be created for a `Authorization Server` which is associated with a Okta `Application` via an `Access Policy`. In Auth0, a scope is created for a `ResourceServer` which is associated with your API via the API identifier.
+      operationId: GetScopes
+      security:
+        - identityToken: []
+      parameters:
+        - in: query
+          name: "scope"
+          description: (Required) This is the name of the scope we'd like to get.
+          schema:
+            type: string
+        - in: query
+          name: "passthrough"
+          description: Optionally include passthrough data
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  scopes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Scope'
+                  passthroughResponse:
+                    type: object
+                    example: {
+                      "ResourceServer": {
+                        "Identifier": "example-resource-server-id",
+                        "Name": "example-resource-server",
+                        "UserPoolId": "example-user-pool"
+                      }
+                    }
+          description: Successfully got scopes
+        '500':
+          description: Unexpected error getting scopes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      summary: Gets scopes in the OpenId Connect Provider
+      tags:
+        - Scopes
+    post:
+      description: Creates scope in the Open Id Connect Provider for a given unique identifier. Different Identity Providers associate scopes with different entities. In AWS Congito the client scope would be created for a `ResourceServer` for a `UserPool`, in keycloak the client scope would be created for a `Realm`, in Okta a client scope would be created for a `Authorization Server` which is associated with a Okta `Application` via an `Access Policy`. In Auth0, a scope is created for a `ResourceServer` which is associated with your API via the API identifier.
+      operationId: CreateScope
+      security:
+        - identityToken: []
+      requestBody:
+        description: id is the unique identifier for the entity in the OpenId Connect Provider for which the scopes are associated with.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - scope
+              properties:
+                scope:
+                  type: string
+                  example:
+                passthrough:
+                  type: object
+                  example: {
+                    UserPoolId: "example-user-pool"
+                  }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  passthroughResponse:
+                    type: object
+                    example: {
+                      "ResourceServer": {
+                        "Identifier": "example-resource-server-id",
+                        "UserPoolId": "example-user-pool"
+                      }
+                    }
+          description: Successfully created scopes
+        '500':
+          description: Unexpected error creating scope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      summary: Creates scope in the OpenId Connect Provider
+      tags:
+        - Scopes
+    delete:
+      description: Deletes scope in the Open Id Connect Provider for a given unique identifier. Different Identity Providers associate scopes with different entities. In AWS Congito the client scope would be created for a `ResourceServer` for a `UserPool`, in keycloak the client scope would be created for a `Realm`, in Okta a client scope would be created for a `Authorization Server` which is associated with a Okta `Application` via an `Access Policy`. In Auth0, a scope is created for a `ResourceServer` which is associated with your API via the API identifier.
+      operationId: DeleteScope
+      security:
+        - identityToken: []
+      parameters:
+        - in: query
+          name: "scope"
+          required: true
+          description: (Required) Name of the scope we'd like to delete.
+          schema:
+            type: string
+        - in: query
+          name: "passthrough"
+          description: Optionally include passthrough data
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Successfully deleted scope.
+        '500':
+          description: Unexpected error deleting scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      summary: Deletes scope in the OpenId Connect Provider
+      tags:
+        - Scopes
+components:
+  schemas:
+    Scope:
+      properties:
+        value:
+          type: string
+          example: "example-scope"
+        description:
+          type: string
+          example: "example scope description"
+    Error:
+      required:
+        - code
+        - message
+        - reason
+      properties:
+        code:
+          type: integer
+          example: "500"
+        message:
+          type: string
+          example: "Internal Server Error"
+        reason:
+          type: string
+          example: "Bad Request"
+  securitySchemes:
+    identityToken:
+      type: apiKey
+      in: cookie
+      name: id_token
+      description: id token cookie from the identity provider used to authenticate the user

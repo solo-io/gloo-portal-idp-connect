@@ -29,47 +29,16 @@ type DeleteClientParams struct {
 	Passthrough *string `form:"passthrough,omitempty" json:"passthrough,omitempty"`
 }
 
-// GetClientParams defines parameters for GetClient.
-type GetClientParams struct {
-	// Id Client id
-	Id string `form:"id" json:"id"`
-
-	// Passthrough Optionally include passthrough data as a json string
-	Passthrough *string `form:"passthrough,omitempty" json:"passthrough,omitempty"`
-}
-
 // CreateClientJSONBody defines parameters for CreateClient.
 type CreateClientJSONBody struct {
 	ClientName  string                  `json:"clientName"`
 	Passthrough *map[string]interface{} `json:"passthrough,omitempty"`
 }
 
-// DeleteClientScopeParams defines parameters for DeleteClientScope.
-type DeleteClientScopeParams struct {
-	// Id (Required) Client ID to delete scope for
-	Id string `form:"id" json:"id"`
-
-	// Scope (Required) Scope name to delete
-	Scope string `form:"scope" json:"scope"`
-
-	// Passthrough Optionally include passthrough data as a json string
-	Passthrough *string `form:"passthrough,omitempty" json:"passthrough,omitempty"`
-}
-
-// GetClientScopesParams defines parameters for GetClientScopes.
-type GetClientScopesParams struct {
-	// Id Client ID to get scopes for
-	Id string `form:"id" json:"id"`
-
-	// Passthrough Optionally include passthrough data as a json string
-	Passthrough *string `form:"passthrough,omitempty" json:"passthrough,omitempty"`
-}
-
-// AddClientScopeJSONBody defines parameters for AddClientScope.
-type AddClientScopeJSONBody struct {
-	Id          string                  `json:"id"`
+// UpdateClientScopesJSONBody defines parameters for UpdateClientScopes.
+type UpdateClientScopesJSONBody struct {
 	Passthrough *map[string]interface{} `json:"passthrough,omitempty"`
-	Scope       string                  `json:"scope"`
+	Scopes      []string                `json:"scopes"`
 }
 
 // DeleteScopeParams defines parameters for DeleteScope.
@@ -77,12 +46,6 @@ type DeleteScopeParams struct {
 	// Scope (Required) Name of the scope we'd like to delete.
 	Scope string `form:"scope" json:"scope"`
 
-	// Passthrough Optionally include passthrough data
-	Passthrough *string `form:"passthrough,omitempty" json:"passthrough,omitempty"`
-}
-
-// GetScopesParams defines parameters for GetScopes.
-type GetScopesParams struct {
 	// Passthrough Optionally include passthrough data
 	Passthrough *string `form:"passthrough,omitempty" json:"passthrough,omitempty"`
 }
@@ -96,8 +59,8 @@ type CreateScopeJSONBody struct {
 // CreateClientJSONRequestBody defines body for CreateClient for application/json ContentType.
 type CreateClientJSONRequestBody CreateClientJSONBody
 
-// AddClientScopeJSONRequestBody defines body for AddClientScope for application/json ContentType.
-type AddClientScopeJSONRequestBody AddClientScopeJSONBody
+// UpdateClientScopesJSONRequestBody defines body for UpdateClientScopes for application/json ContentType.
+type UpdateClientScopesJSONRequestBody UpdateClientScopesJSONBody
 
 // CreateScopeJSONRequestBody defines body for CreateScope for application/json ContentType.
 type CreateScopeJSONRequestBody CreateScopeJSONBody

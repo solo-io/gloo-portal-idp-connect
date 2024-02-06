@@ -21,12 +21,6 @@ type CognitoClient interface {
 		optFns ...func(*cognito.Options),
 	) (*cognito.DeleteUserPoolClientOutput, error)
 
-	DescribeUserPoolClient(
-		ctx context.Context,
-		params *cognito.DescribeUserPoolClientInput,
-		optFns ...func(*cognito.Options),
-	) (*cognito.DescribeUserPoolClientOutput, error)
-
 	CreateUserPoolClient(
 		ctx context.Context,
 		params *cognito.CreateUserPoolClientInput,
@@ -99,33 +93,6 @@ func (s *StrictServerHandler) DeleteClient(
 	return portalv1.DeleteClient204Response{}, nil
 }
 
-// GetClient gets a client from the OpenId Connect Provider
-func (s *StrictServerHandler) GetClient(
-	ctx context.Context,
-	request portalv1.GetClientRequestObject,
-) (portalv1.GetClientResponseObject, error) {
-	out, err := s.cognitoClient.DescribeUserPoolClient(ctx, &cognito.DescribeUserPoolClientInput{
-		UserPoolId: &s.userPool,
-		ClientId:   aws.String(request.Params.Id),
-	})
-
-	if err != nil {
-		cognitoErr := unwrapCognitoError(err)
-		return errResponseFactory[portalv1.GetClientResponseObject](
-			cognitoErr,
-			map[int]portalv1.GetClientResponseObject{
-				404: portalv1.GetClient404JSONResponse(cognitoErr),
-			},
-			portalv1.GetClient500JSONResponse(cognitoErr),
-		), nil
-	}
-
-	return portalv1.GetClient200JSONResponse{
-		ClientName: out.UserPoolClient.ClientName,
-		ClientId:   &request.Params.Id,
-	}, nil
-}
-
 // CreateClient creates a client in the OpenId Connect Provider
 func (s *StrictServerHandler) CreateClient(
 	ctx context.Context,
@@ -145,130 +112,36 @@ func (s *StrictServerHandler) CreateClient(
 		return portalv1.CreateClient500JSONResponse(unwrapCognitoError(err)), nil
 	}
 
-	return portalv1.CreateClient200JSONResponse{
+	return portalv1.CreateClient201JSONResponse{
 		ClientId:     out.UserPoolClient.ClientId,
 		ClientSecret: out.UserPoolClient.ClientSecret,
 		ClientName:   aws.String(request.Body.ClientName),
 	}, nil
 }
 
-// DeleteClientScope deletes a client in the OpenId Connect Provider
-func (s *StrictServerHandler) DeleteClientScope(
-	ctx context.Context,
-	request portalv1.DeleteClientScopeRequestObject,
-) (portalv1.DeleteClientScopeResponseObject, error) {
-	out, err := s.cognitoClient.DescribeUserPoolClient(ctx, &cognito.DescribeUserPoolClientInput{
-		UserPoolId: &s.userPool,
-		ClientId:   aws.String(request.Params.Id),
-	})
-
-	if err != nil {
-		cognitoErr := unwrapCognitoError(err)
-		return errResponseFactory[portalv1.DeleteClientScopeResponseObject](
-			cognitoErr,
-			map[int]portalv1.DeleteClientScopeResponseObject{
-				404: portalv1.DeleteClientScope404JSONResponse(cognitoErr),
-			},
-			portalv1.DeleteClientScope500JSONResponse(cognitoErr),
-		), nil
-	}
-
-	scopeExists := false
-	var updatedScopes []string
-	for _, scope := range out.UserPoolClient.AllowedOAuthScopes {
-		if scope == request.Params.Scope {
-			scopeExists = true
-			continue
-		}
-		updatedScopes = append(updatedScopes, scope)
-	}
-
-	if !scopeExists {
-		return portalv1.DeleteClientScope404JSONResponse(newPortalError(404, "Resource Not Found", "Scope not present in client")), nil
-	}
-
-	_, err = s.cognitoClient.UpdateUserPoolClient(ctx, &cognito.UpdateUserPoolClientInput{
-		UserPoolId:         &s.userPool,
-		ClientId:           aws.String(request.Params.Id),
-		AllowedOAuthScopes: updatedScopes,
-	})
-
-	if err != nil {
-		return portalv1.DeleteClientScope500JSONResponse(unwrapCognitoError(err)), nil
-	}
-
-	return portalv1.DeleteClientScope204Response{}, nil
-}
-
-// GetClientScopes gets scopes for a client from the OpenId Connect Provider
-func (s *StrictServerHandler) GetClientScopes(
-	ctx context.Context,
-	request portalv1.GetClientScopesRequestObject,
-) (portalv1.GetClientScopesResponseObject, error) {
-	out, err := s.cognitoClient.DescribeUserPoolClient(ctx, &cognito.DescribeUserPoolClientInput{
-		UserPoolId: &s.userPool,
-		ClientId:   aws.String(request.Params.Id),
-	})
-
-	if err != nil {
-		cognitoErr := unwrapCognitoError(err)
-		return errResponseFactory[portalv1.GetClientScopesResponseObject](
-			cognitoErr,
-			map[int]portalv1.GetClientScopesResponseObject{
-				404: portalv1.GetClientScopes404JSONResponse(cognitoErr),
-			},
-			portalv1.GetClientScopes500JSONResponse(cognitoErr),
-		), nil
-	}
-
-	return portalv1.GetClientScopes200JSONResponse{
-		Scopes: out.UserPoolClient.AllowedOAuthScopes,
-	}, nil
-}
-
 // AddClientScope adds scope to a client in the OpenId Connect Provider
-func (s *StrictServerHandler) AddClientScope(
+func (s *StrictServerHandler) UpdateClientScopes(
 	ctx context.Context,
-	request portalv1.AddClientScopeRequestObject,
-) (portalv1.AddClientScopeResponseObject, error) {
-	out, err := s.cognitoClient.DescribeUserPoolClient(ctx, &cognito.DescribeUserPoolClientInput{
-		UserPoolId: &s.userPool,
-		ClientId:   aws.String(request.Body.Id),
+	request portalv1.UpdateClientScopesRequestObject,
+) (portalv1.UpdateClientScopesResponseObject, error) {
+	_, err := s.cognitoClient.UpdateUserPoolClient(ctx, &cognito.UpdateUserPoolClientInput{
+		UserPoolId:         &s.userPool,
+		ClientId:           &request.Id,
+		AllowedOAuthScopes: request.Body.Scopes,
 	})
 
 	if err != nil {
 		cognitoErr := unwrapCognitoError(err)
-		return errResponseFactory[portalv1.AddClientScopeResponseObject](
+		return errResponseFactory[portalv1.UpdateClientScopesResponseObject](
 			cognitoErr,
-			map[int]portalv1.AddClientScopeResponseObject{
-				404: portalv1.AddClientScope404JSONResponse(cognitoErr),
+			map[int]portalv1.UpdateClientScopesResponseObject{
+				404: portalv1.UpdateClientScopes404JSONResponse(cognitoErr),
 			},
-			portalv1.AddClientScope500JSONResponse(cognitoErr),
+			portalv1.UpdateClientScopes500JSONResponse(cognitoErr),
 		), nil
 	}
 
-	inScope := request.Body.Scope
-
-	userScopes := out.UserPoolClient.AllowedOAuthScopes
-	for _, scope := range userScopes {
-		if scope == inScope {
-			return portalv1.AddClientScope409JSONResponse(newPortalError(409, "Resource Exists", "scope already exists")), nil
-		}
-	}
-
-	userScopes = append(userScopes, inScope)
-
-	_, err = s.cognitoClient.UpdateUserPoolClient(ctx, &cognito.UpdateUserPoolClientInput{
-		UserPoolId:         &s.userPool,
-		ClientId:           aws.String(request.Body.Id),
-		AllowedOAuthScopes: userScopes,
-	})
-
-	if err != nil {
-		return portalv1.AddClientScope500JSONResponse(unwrapCognitoError(err)), nil
-	}
-
-	return portalv1.AddClientScope204Response{}, nil
+	return portalv1.UpdateClientScopes204Response{}, nil
 }
 
 // DeleteScope deletes scopes in the OpenId Connect Provider
@@ -313,35 +186,6 @@ func (s *StrictServerHandler) DeleteScope(
 	}
 
 	return portalv1.DeleteScope204Response{}, nil
-}
-
-// GetScopes creates scopes in the OpenId Connect Provider
-func (s *StrictServerHandler) GetScopes(
-	ctx context.Context,
-	_ portalv1.GetScopesRequestObject,
-) (portalv1.GetScopesResponseObject, error) {
-	out, err := s.cognitoClient.DescribeResourceServer(ctx, &cognito.DescribeResourceServerInput{
-		UserPoolId: &s.userPool,
-		Identifier: aws.String(AccessResourceServerName),
-	})
-
-	if err != nil {
-		var notFoundErr *types.ResourceNotFoundException
-		if ok := errors.As(err, &notFoundErr); ok {
-			if err = createResourceServer(ctx, s); err != nil {
-				return portalv1.GetScopes500JSONResponse(newPortal500Error(err.Error())), nil
-			}
-			return portalv1.GetScopes200JSONResponse{}, nil
-		}
-
-		return portalv1.GetScopes500JSONResponse(unwrapCognitoError(err)), nil
-	}
-
-	scopes := cognitoScopesToAPIScopesType(out.ResourceServer.Scopes...)
-
-	return portalv1.GetScopes200JSONResponse{
-		Scopes: scopes,
-	}, nil
 }
 
 // CreateScope creates scopes in the OpenId Connect Provider
@@ -389,7 +233,7 @@ func (s *StrictServerHandler) CreateScope(
 		Scopes:     cognitoScopes,
 	})
 
-	return portalv1.CreateScope204Response{}, nil
+	return portalv1.CreateScope201Response{}, nil
 }
 
 func unwrapCognitoError(err error) portalv1.Error {

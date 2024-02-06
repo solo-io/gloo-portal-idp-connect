@@ -19,27 +19,15 @@ type ServerInterface interface {
 	// Deletes a client in the OpenId Connect Provider
 	// (DELETE /client)
 	DeleteClient(ctx echo.Context, params DeleteClientParams) error
-	// Gets a client from the OpenId Connect Provider
-	// (GET /client)
-	GetClient(ctx echo.Context, params GetClientParams) error
 	// Creates a client in the OpenId Connect Provider
 	// (POST /client)
 	CreateClient(ctx echo.Context) error
-	// Deletes a client in the OpenId Connect Provider
-	// (DELETE /client/scopes)
-	DeleteClientScope(ctx echo.Context, params DeleteClientScopeParams) error
-	// Gets scopes for a client from the OpenId Connect Provider
-	// (GET /client/scopes)
-	GetClientScopes(ctx echo.Context, params GetClientScopesParams) error
 	// Adds scope to a client in the OpenId Connect Provider
-	// (POST /client/scopes)
-	AddClientScope(ctx echo.Context) error
+	// (PUT /clients/{id}/scopes)
+	UpdateClientScopes(ctx echo.Context, id string) error
 	// Deletes scope in the OpenId Connect Provider
 	// (DELETE /scopes)
 	DeleteScope(ctx echo.Context, params DeleteScopeParams) error
-	// Gets scopes in the OpenId Connect Provider
-	// (GET /scopes)
-	GetScopes(ctx echo.Context, params GetScopesParams) error
 	// Creates scope in the OpenId Connect Provider
 	// (POST /scopes)
 	CreateScope(ctx echo.Context) error
@@ -77,33 +65,6 @@ func (w *ServerInterfaceWrapper) DeleteClient(ctx echo.Context) error {
 	return err
 }
 
-// GetClient converts echo context to params.
-func (w *ServerInterfaceWrapper) GetClient(ctx echo.Context) error {
-	var err error
-
-	ctx.Set(IdentityTokenScopes, []string{})
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params GetClientParams
-	// ------------- Required query parameter "id" -------------
-
-	err = runtime.BindQueryParameter("form", true, true, "id", ctx.QueryParams(), &params.Id)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter id: %s", err))
-	}
-
-	// ------------- Optional query parameter "passthrough" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "passthrough", ctx.QueryParams(), &params.Passthrough)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter passthrough: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.GetClient(ctx, params)
-	return err
-}
-
 // CreateClient converts echo context to params.
 func (w *ServerInterfaceWrapper) CreateClient(ctx echo.Context) error {
 	var err error
@@ -115,75 +76,21 @@ func (w *ServerInterfaceWrapper) CreateClient(ctx echo.Context) error {
 	return err
 }
 
-// DeleteClientScope converts echo context to params.
-func (w *ServerInterfaceWrapper) DeleteClientScope(ctx echo.Context) error {
+// UpdateClientScopes converts echo context to params.
+func (w *ServerInterfaceWrapper) UpdateClientScopes(ctx echo.Context) error {
 	var err error
+	// ------------- Path parameter "id" -------------
+	var id string
 
-	ctx.Set(IdentityTokenScopes, []string{})
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params DeleteClientScopeParams
-	// ------------- Required query parameter "id" -------------
-
-	err = runtime.BindQueryParameter("form", true, true, "id", ctx.QueryParams(), &params.Id)
+	err = runtime.BindStyledParameterWithOptions("simple", "id", ctx.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter id: %s", err))
 	}
 
-	// ------------- Required query parameter "scope" -------------
-
-	err = runtime.BindQueryParameter("form", true, true, "scope", ctx.QueryParams(), &params.Scope)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter scope: %s", err))
-	}
-
-	// ------------- Optional query parameter "passthrough" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "passthrough", ctx.QueryParams(), &params.Passthrough)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter passthrough: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.DeleteClientScope(ctx, params)
-	return err
-}
-
-// GetClientScopes converts echo context to params.
-func (w *ServerInterfaceWrapper) GetClientScopes(ctx echo.Context) error {
-	var err error
-
-	ctx.Set(IdentityTokenScopes, []string{})
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params GetClientScopesParams
-	// ------------- Required query parameter "id" -------------
-
-	err = runtime.BindQueryParameter("form", true, true, "id", ctx.QueryParams(), &params.Id)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter id: %s", err))
-	}
-
-	// ------------- Optional query parameter "passthrough" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "passthrough", ctx.QueryParams(), &params.Passthrough)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter passthrough: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.GetClientScopes(ctx, params)
-	return err
-}
-
-// AddClientScope converts echo context to params.
-func (w *ServerInterfaceWrapper) AddClientScope(ctx echo.Context) error {
-	var err error
-
 	ctx.Set(IdentityTokenScopes, []string{})
 
 	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.AddClientScope(ctx)
+	err = w.Handler.UpdateClientScopes(ctx, id)
 	return err
 }
 
@@ -211,26 +118,6 @@ func (w *ServerInterfaceWrapper) DeleteScope(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.DeleteScope(ctx, params)
-	return err
-}
-
-// GetScopes converts echo context to params.
-func (w *ServerInterfaceWrapper) GetScopes(ctx echo.Context) error {
-	var err error
-
-	ctx.Set(IdentityTokenScopes, []string{})
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params GetScopesParams
-	// ------------- Optional query parameter "passthrough" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "passthrough", ctx.QueryParams(), &params.Passthrough)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter passthrough: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.GetScopes(ctx, params)
 	return err
 }
 
@@ -274,13 +161,9 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	}
 
 	router.DELETE(baseURL+"/client", wrapper.DeleteClient)
-	router.GET(baseURL+"/client", wrapper.GetClient)
 	router.POST(baseURL+"/client", wrapper.CreateClient)
-	router.DELETE(baseURL+"/client/scopes", wrapper.DeleteClientScope)
-	router.GET(baseURL+"/client/scopes", wrapper.GetClientScopes)
-	router.POST(baseURL+"/client/scopes", wrapper.AddClientScope)
+	router.PUT(baseURL+"/clients/:id/scopes", wrapper.UpdateClientScopes)
 	router.DELETE(baseURL+"/scopes", wrapper.DeleteScope)
-	router.GET(baseURL+"/scopes", wrapper.GetScopes)
 	router.POST(baseURL+"/scopes", wrapper.CreateScope)
 
 }
@@ -319,45 +202,6 @@ func (response DeleteClient500JSONResponse) VisitDeleteClientResponse(w http.Res
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetClientRequestObject struct {
-	Params GetClientParams
-}
-
-type GetClientResponseObject interface {
-	VisitGetClientResponse(w http.ResponseWriter) error
-}
-
-type GetClient200JSONResponse struct {
-	ClientId            *string                 `json:"clientId,omitempty"`
-	ClientName          *string                 `json:"clientName,omitempty"`
-	PassthroughResponse *map[string]interface{} `json:"passthroughResponse,omitempty"`
-}
-
-func (response GetClient200JSONResponse) VisitGetClientResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetClient404JSONResponse Error
-
-func (response GetClient404JSONResponse) VisitGetClientResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetClient500JSONResponse Error
-
-func (response GetClient500JSONResponse) VisitGetClientResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(500)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
 type CreateClientRequestObject struct {
 	Body *CreateClientJSONRequestBody
 }
@@ -366,7 +210,7 @@ type CreateClientResponseObject interface {
 	VisitCreateClientResponse(w http.ResponseWriter) error
 }
 
-type CreateClient200JSONResponse struct {
+type CreateClient201JSONResponse struct {
 	ClientId            *string                 `json:"clientId,omitempty"`
 	ClientMetadata      *map[string]interface{} `json:"clientMetadata,omitempty"`
 	ClientName          *string                 `json:"clientName,omitempty"`
@@ -374,9 +218,9 @@ type CreateClient200JSONResponse struct {
 	PassthroughResponse *map[string]interface{} `json:"passthroughResponse,omitempty"`
 }
 
-func (response CreateClient200JSONResponse) VisitCreateClientResponse(w http.ResponseWriter) error {
+func (response CreateClient201JSONResponse) VisitCreateClientResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
+	w.WriteHeader(201)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -390,126 +234,35 @@ func (response CreateClient500JSONResponse) VisitCreateClientResponse(w http.Res
 	return json.NewEncoder(w).Encode(response)
 }
 
-type DeleteClientScopeRequestObject struct {
-	Params DeleteClientScopeParams
+type UpdateClientScopesRequestObject struct {
+	Id   string `json:"id"`
+	Body *UpdateClientScopesJSONRequestBody
 }
 
-type DeleteClientScopeResponseObject interface {
-	VisitDeleteClientScopeResponse(w http.ResponseWriter) error
+type UpdateClientScopesResponseObject interface {
+	VisitUpdateClientScopesResponse(w http.ResponseWriter) error
 }
 
-type DeleteClientScope204Response struct {
+type UpdateClientScopes204Response struct {
 }
 
-func (response DeleteClientScope204Response) VisitDeleteClientScopeResponse(w http.ResponseWriter) error {
+func (response UpdateClientScopes204Response) VisitUpdateClientScopesResponse(w http.ResponseWriter) error {
 	w.WriteHeader(204)
 	return nil
 }
 
-type DeleteClientScope404JSONResponse Error
+type UpdateClientScopes404JSONResponse Error
 
-func (response DeleteClientScope404JSONResponse) VisitDeleteClientScopeResponse(w http.ResponseWriter) error {
+func (response UpdateClientScopes404JSONResponse) VisitUpdateClientScopesResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type DeleteClientScope500JSONResponse Error
+type UpdateClientScopes500JSONResponse Error
 
-func (response DeleteClientScope500JSONResponse) VisitDeleteClientScopeResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(500)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetClientScopesRequestObject struct {
-	Params GetClientScopesParams
-}
-
-type GetClientScopesResponseObject interface {
-	VisitGetClientScopesResponse(w http.ResponseWriter) error
-}
-
-type GetClientScopes200JSONResponse struct {
-	PassthroughResponse *map[string]interface{} `json:"passthroughResponse,omitempty"`
-	Scopes              []string                `json:"scopes"`
-}
-
-func (response GetClientScopes200JSONResponse) VisitGetClientScopesResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetClientScopes404JSONResponse Error
-
-func (response GetClientScopes404JSONResponse) VisitGetClientScopesResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetClientScopes500JSONResponse Error
-
-func (response GetClientScopes500JSONResponse) VisitGetClientScopesResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(500)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type AddClientScopeRequestObject struct {
-	Body *AddClientScopeJSONRequestBody
-}
-
-type AddClientScopeResponseObject interface {
-	VisitAddClientScopeResponse(w http.ResponseWriter) error
-}
-
-type AddClientScope200JSONResponse struct {
-	PassthroughResponse *map[string]interface{} `json:"passthroughResponse,omitempty"`
-}
-
-func (response AddClientScope200JSONResponse) VisitAddClientScopeResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type AddClientScope204Response struct {
-}
-
-func (response AddClientScope204Response) VisitAddClientScopeResponse(w http.ResponseWriter) error {
-	w.WriteHeader(204)
-	return nil
-}
-
-type AddClientScope404JSONResponse Error
-
-func (response AddClientScope404JSONResponse) VisitAddClientScopeResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type AddClientScope409JSONResponse Error
-
-func (response AddClientScope409JSONResponse) VisitAddClientScopeResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(409)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type AddClientScope500JSONResponse Error
-
-func (response AddClientScope500JSONResponse) VisitAddClientScopeResponse(w http.ResponseWriter) error {
+func (response UpdateClientScopes500JSONResponse) VisitUpdateClientScopesResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
 
@@ -550,35 +303,6 @@ func (response DeleteScope500JSONResponse) VisitDeleteScopeResponse(w http.Respo
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetScopesRequestObject struct {
-	Params GetScopesParams
-}
-
-type GetScopesResponseObject interface {
-	VisitGetScopesResponse(w http.ResponseWriter) error
-}
-
-type GetScopes200JSONResponse struct {
-	PassthroughResponse *map[string]interface{} `json:"passthroughResponse,omitempty"`
-	Scopes              []Scope                 `json:"scopes"`
-}
-
-func (response GetScopes200JSONResponse) VisitGetScopesResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetScopes500JSONResponse Error
-
-func (response GetScopes500JSONResponse) VisitGetScopesResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(500)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
 type CreateScopeRequestObject struct {
 	Body *CreateScopeJSONRequestBody
 }
@@ -587,11 +311,11 @@ type CreateScopeResponseObject interface {
 	VisitCreateScopeResponse(w http.ResponseWriter) error
 }
 
-type CreateScope204Response struct {
+type CreateScope201Response struct {
 }
 
-func (response CreateScope204Response) VisitCreateScopeResponse(w http.ResponseWriter) error {
-	w.WriteHeader(204)
+func (response CreateScope201Response) VisitCreateScopeResponse(w http.ResponseWriter) error {
+	w.WriteHeader(201)
 	return nil
 }
 
@@ -618,27 +342,15 @@ type StrictServerInterface interface {
 	// Deletes a client in the OpenId Connect Provider
 	// (DELETE /client)
 	DeleteClient(ctx context.Context, request DeleteClientRequestObject) (DeleteClientResponseObject, error)
-	// Gets a client from the OpenId Connect Provider
-	// (GET /client)
-	GetClient(ctx context.Context, request GetClientRequestObject) (GetClientResponseObject, error)
 	// Creates a client in the OpenId Connect Provider
 	// (POST /client)
 	CreateClient(ctx context.Context, request CreateClientRequestObject) (CreateClientResponseObject, error)
-	// Deletes a client in the OpenId Connect Provider
-	// (DELETE /client/scopes)
-	DeleteClientScope(ctx context.Context, request DeleteClientScopeRequestObject) (DeleteClientScopeResponseObject, error)
-	// Gets scopes for a client from the OpenId Connect Provider
-	// (GET /client/scopes)
-	GetClientScopes(ctx context.Context, request GetClientScopesRequestObject) (GetClientScopesResponseObject, error)
 	// Adds scope to a client in the OpenId Connect Provider
-	// (POST /client/scopes)
-	AddClientScope(ctx context.Context, request AddClientScopeRequestObject) (AddClientScopeResponseObject, error)
+	// (PUT /clients/{id}/scopes)
+	UpdateClientScopes(ctx context.Context, request UpdateClientScopesRequestObject) (UpdateClientScopesResponseObject, error)
 	// Deletes scope in the OpenId Connect Provider
 	// (DELETE /scopes)
 	DeleteScope(ctx context.Context, request DeleteScopeRequestObject) (DeleteScopeResponseObject, error)
-	// Gets scopes in the OpenId Connect Provider
-	// (GET /scopes)
-	GetScopes(ctx context.Context, request GetScopesRequestObject) (GetScopesResponseObject, error)
 	// Creates scope in the OpenId Connect Provider
 	// (POST /scopes)
 	CreateScope(ctx context.Context, request CreateScopeRequestObject) (CreateScopeResponseObject, error)
@@ -681,31 +393,6 @@ func (sh *strictHandler) DeleteClient(ctx echo.Context, params DeleteClientParam
 	return nil
 }
 
-// GetClient operation middleware
-func (sh *strictHandler) GetClient(ctx echo.Context, params GetClientParams) error {
-	var request GetClientRequestObject
-
-	request.Params = params
-
-	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
-		return sh.ssi.GetClient(ctx.Request().Context(), request.(GetClientRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetClient")
-	}
-
-	response, err := handler(ctx, request)
-
-	if err != nil {
-		return err
-	} else if validResponse, ok := response.(GetClientResponseObject); ok {
-		return validResponse.VisitGetClientResponse(ctx.Response())
-	} else if response != nil {
-		return fmt.Errorf("unexpected response type: %T", response)
-	}
-	return nil
-}
-
 // CreateClient operation middleware
 func (sh *strictHandler) CreateClient(ctx echo.Context) error {
 	var request CreateClientRequestObject
@@ -735,79 +422,31 @@ func (sh *strictHandler) CreateClient(ctx echo.Context) error {
 	return nil
 }
 
-// DeleteClientScope operation middleware
-func (sh *strictHandler) DeleteClientScope(ctx echo.Context, params DeleteClientScopeParams) error {
-	var request DeleteClientScopeRequestObject
+// UpdateClientScopes operation middleware
+func (sh *strictHandler) UpdateClientScopes(ctx echo.Context, id string) error {
+	var request UpdateClientScopesRequestObject
 
-	request.Params = params
+	request.Id = id
 
-	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
-		return sh.ssi.DeleteClientScope(ctx.Request().Context(), request.(DeleteClientScopeRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "DeleteClientScope")
-	}
-
-	response, err := handler(ctx, request)
-
-	if err != nil {
-		return err
-	} else if validResponse, ok := response.(DeleteClientScopeResponseObject); ok {
-		return validResponse.VisitDeleteClientScopeResponse(ctx.Response())
-	} else if response != nil {
-		return fmt.Errorf("unexpected response type: %T", response)
-	}
-	return nil
-}
-
-// GetClientScopes operation middleware
-func (sh *strictHandler) GetClientScopes(ctx echo.Context, params GetClientScopesParams) error {
-	var request GetClientScopesRequestObject
-
-	request.Params = params
-
-	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
-		return sh.ssi.GetClientScopes(ctx.Request().Context(), request.(GetClientScopesRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetClientScopes")
-	}
-
-	response, err := handler(ctx, request)
-
-	if err != nil {
-		return err
-	} else if validResponse, ok := response.(GetClientScopesResponseObject); ok {
-		return validResponse.VisitGetClientScopesResponse(ctx.Response())
-	} else if response != nil {
-		return fmt.Errorf("unexpected response type: %T", response)
-	}
-	return nil
-}
-
-// AddClientScope operation middleware
-func (sh *strictHandler) AddClientScope(ctx echo.Context) error {
-	var request AddClientScopeRequestObject
-
-	var body AddClientScopeJSONRequestBody
+	var body UpdateClientScopesJSONRequestBody
 	if err := ctx.Bind(&body); err != nil {
 		return err
 	}
 	request.Body = &body
 
 	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
-		return sh.ssi.AddClientScope(ctx.Request().Context(), request.(AddClientScopeRequestObject))
+		return sh.ssi.UpdateClientScopes(ctx.Request().Context(), request.(UpdateClientScopesRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "AddClientScope")
+		handler = middleware(handler, "UpdateClientScopes")
 	}
 
 	response, err := handler(ctx, request)
 
 	if err != nil {
 		return err
-	} else if validResponse, ok := response.(AddClientScopeResponseObject); ok {
-		return validResponse.VisitAddClientScopeResponse(ctx.Response())
+	} else if validResponse, ok := response.(UpdateClientScopesResponseObject); ok {
+		return validResponse.VisitUpdateClientScopesResponse(ctx.Response())
 	} else if response != nil {
 		return fmt.Errorf("unexpected response type: %T", response)
 	}
@@ -833,31 +472,6 @@ func (sh *strictHandler) DeleteScope(ctx echo.Context, params DeleteScopeParams)
 		return err
 	} else if validResponse, ok := response.(DeleteScopeResponseObject); ok {
 		return validResponse.VisitDeleteScopeResponse(ctx.Response())
-	} else if response != nil {
-		return fmt.Errorf("unexpected response type: %T", response)
-	}
-	return nil
-}
-
-// GetScopes operation middleware
-func (sh *strictHandler) GetScopes(ctx echo.Context, params GetScopesParams) error {
-	var request GetScopesRequestObject
-
-	request.Params = params
-
-	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
-		return sh.ssi.GetScopes(ctx.Request().Context(), request.(GetScopesRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetScopes")
-	}
-
-	response, err := handler(ctx, request)
-
-	if err != nil {
-		return err
-	} else if validResponse, ok := response.(GetScopesResponseObject); ok {
-		return validResponse.VisitGetScopesResponse(ctx.Response())
 	} else if response != nil {
 		return fmt.Errorf("unexpected response type: %T", response)
 	}

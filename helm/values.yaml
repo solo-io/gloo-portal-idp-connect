@@ -1,0 +1,30 @@
+fullname: gloo-portal-idp-connect
+image:
+  hub: us-docker.pkg.dev
+  repository: gloo-mesh/gloo-portal-idp-connect
+  tag: 0.1.0-dirty
+  pullPolicy: Always
+# Connector to use in IDP connect sample. Supported connectors are: 'cognito'
+connector: cognito
+# Configuration for the cognito connector
+cognito:
+  # (Required) ID of user pool to create clients and add scopes
+  userPoolId:
+    # ID of the resource server to create scopes within
+  resourceServer: "access"
+resources:
+  container:
+    limit:
+      cpu: 300m
+      memory: 200Mi
+    request:
+      cpu: 100m
+      memory: 200Mi
+  init:
+    limit:
+      cpu: 300m
+      memory: 50Mi
+    request:
+      cpu: 100m
+      memory: 50Mi
+revisionHistoryLimit: 10

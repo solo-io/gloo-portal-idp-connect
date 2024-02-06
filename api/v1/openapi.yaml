@@ -30,17 +30,22 @@ paths:
             application/json:
               schema:
                 type: object
-                example: {
-                  ClientName: "test-client",
-                  ClientId: "7bcv24sdded1ig3b5glvlbkcgc",
-                  UserPoolClient: {
-                    AllowedOAuthScopes: [
-                      "email",
-                      "openid"
-                    ],
-                  }
-                }
+                properties:
+                  clientName:
+                    type: string
+                    example: "example-user-pool-developer-1"
+                  clientId:
+                    type: string
+                    example: "example-resource-server-id"
+                  passthroughResponse:
+                    type: object
           description: Successfully retrieved client information.
+        '404':
+          description: Client not found
+          content:
+              application/json:
+                schema:
+                    $ref: '#/components/schemas/Error'
         '500':
           description: Unexpected error querying for client information
           content:
@@ -56,24 +61,20 @@ paths:
       security:
         - identityToken: []
       requestBody:
-        description: Either `glooPortalUserId` or `glooPortalTeamId` needs to be populated. `passthrough` is directly passed to the SPI (Server Provider Interface) implementation that will create the client in the Open Id Connect Provider.
+        description: (Required) clientName for creating name of the client. `passthrough` is directly passed to the SPI (Server Provider Interface) implementation that will create the client in the Open Id Connect Provider.
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - clientName
               properties:
-                glooPortalUserId:
+                clientName:
                   type: string
-                  example: "example-developer"
-                glooPortalTeamId:
-                  type: string
-                  example: "example-team"
+                  example: "example-user-pool-developer-1"
                 passthrough:
                   type: object
-                  example: {
-                    ClientName: "example-user-pool-developer-1",
-                  }
       responses:
         '200':
           content:
@@ -121,6 +122,7 @@ paths:
       parameters:
         - in: query
           name: "id"
+          required: true
           description: (Required) ID for client to delete.
           schema:
             type: string
@@ -132,6 +134,12 @@ paths:
       responses:
         '204':
           description: Successfully deleted client.
+        '404':
+          description: Client not found
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/Error'
         '500':
           description: Unexpected error deleting client.
           content:
@@ -165,11 +173,13 @@ paths:
             application/json:
               schema:
                 type: object
+                required:
+                  - scopes
                 properties:
                   scopes:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Scope'
+                      type: string
                   passthroughResponse:
                     type: object
                     example: {
@@ -180,6 +190,12 @@ paths:
                       }
                     }
           description: Successfully retrieved client scopes.
+        '404':
+          description: Client not found
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/Error'
         '500':
           description: Unexpected error querying for client scopes
           content:
@@ -201,6 +217,9 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - id
+                - scope
               properties:
                 id:
                   type: string
@@ -230,6 +249,20 @@ paths:
                       }
                     }
           description: Successfully added scopes to client
+        '204':
+          description: Successfully added scopes to client
+        '404':
+          description: Client not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Scope already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Unexpected error adding client scopes
           content:
@@ -265,6 +298,12 @@ paths:
       responses:
         '204':
           description: Successfully deleted client.
+        '404':
+          description: Client not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Unexpected error deleting client.
           content:
@@ -282,11 +321,6 @@ paths:
         - identityToken: []
       parameters:
         - in: query
-          name: "scope"
-          description: (Required) This is the name of the scope we'd like to get.
-          schema:
-            type: string
-        - in: query
           name: "passthrough"
           description: Optionally include passthrough data
           schema:
@@ -296,6 +330,8 @@ paths:
           content:
             application/json:
               schema:
+                required:
+                  - scopes
                 type: object
                 properties:
                   scopes:
@@ -327,7 +363,7 @@ paths:
       security:
         - identityToken: []
       requestBody:
-        description: id is the unique identifier for the entity in the OpenId Connect Provider for which the scopes are associated with.
+        description: Create scope for a specific client. Identity token is required to validate user is associated with the given client.
         required: true
         content:
           application/json:
@@ -337,29 +373,21 @@ paths:
                 - scope
               properties:
                 scope:
-                  type: string
-                  example:
+                  $ref: '#/components/schemas/Scope'
                 passthrough:
                   type: object
                   example: {
                     UserPoolId: "example-user-pool"
                   }
       responses:
-        '200':
+        '204':
+          description: Successfully created scope
+        '409':
+          description: Scope already exists
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  passthroughResponse:
-                    type: object
-                    example: {
-                      "ResourceServer": {
-                        "Identifier": "example-resource-server-id",
-                        "UserPoolId": "example-user-pool"
-                      }
-                    }
-          description: Successfully created scopes
+                $ref: '#/components/schemas/Error'
         '500':
           description: Unexpected error creating scope
           content:
@@ -389,6 +417,12 @@ paths:
       responses:
         '204':
           description: Successfully deleted scope.
+        '404':
+          description: Scope not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Unexpected error deleting scope.
           content:
@@ -401,6 +435,9 @@ paths:
 components:
   schemas:
     Scope:
+      required:
+        - value
+        - description
       properties:
         value:
           type: string

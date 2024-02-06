@@ -23,17 +23,17 @@ import (
 )
 
 type Options struct {
-	port            string
-	cognitoUserPool string
+	Port            string
+	CognitoUserPool string
 }
 
 func (o *Options) AddToFlags(flag *flag.FlagSet) {
-	flag.StringVar(&o.port, "port", "8080", "Port for HTTP server")
-	flag.StringVar(&o.cognitoUserPool, "cognito-user-pool", "", "Cognito user pool")
+	flag.StringVar(&o.Port, "port", "8080", "Port for HTTP server")
+	flag.StringVar(&o.CognitoUserPool, "cognito-user-pool", "", "Cognito user pool")
 }
 
 func (o *Options) Validate() error {
-	if o.cognitoUserPool == "" {
+	if o.CognitoUserPool == "" {
 		return eris.New("cognito user pool is required")
 	}
 	return nil
@@ -63,7 +63,7 @@ func ListenAndServe(ctx context.Context, opts *Options) error {
 
 	cognitoClient := cognito.NewFromConfig(cfg)
 	// Create an instance of our handler which satisfies the generated interface
-	congitoHandler := newStrictServerHandler(opts, cognitoClient)
+	congitoHandler := NewStrictServerHandler(opts, cognitoClient)
 	portalHandler := portalv1.NewStrictHandler(congitoHandler, nil)
 
 	e := echo.New()
@@ -85,9 +85,9 @@ func ListenAndServe(ctx context.Context, opts *Options) error {
 
 	s := &http.Server{
 		Handler: e,
-		Addr:    net.JoinHostPort("0.0.0.0", opts.port),
+		Addr:    net.JoinHostPort("0.0.0.0", opts.Port),
 	}
 
-	log.Printf("Starting server on port %v\n", opts.port)
+	log.Printf("Starting server on port %v\n", opts.Port)
 	return s.ListenAndServe()
 }

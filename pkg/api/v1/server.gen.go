@@ -301,6 +301,15 @@ func (response DeleteClient204Response) VisitDeleteClientResponse(w http.Respons
 	return nil
 }
 
+type DeleteClient404JSONResponse Error
+
+func (response DeleteClient404JSONResponse) VisitDeleteClientResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type DeleteClient500JSONResponse Error
 
 func (response DeleteClient500JSONResponse) VisitDeleteClientResponse(w http.ResponseWriter) error {
@@ -318,11 +327,24 @@ type GetClientResponseObject interface {
 	VisitGetClientResponse(w http.ResponseWriter) error
 }
 
-type GetClient200JSONResponse map[string]interface{}
+type GetClient200JSONResponse struct {
+	ClientId            *string                 `json:"clientId,omitempty"`
+	ClientName          *string                 `json:"clientName,omitempty"`
+	PassthroughResponse *map[string]interface{} `json:"passthroughResponse,omitempty"`
+}
 
 func (response GetClient200JSONResponse) VisitGetClientResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetClient404JSONResponse Error
+
+func (response GetClient404JSONResponse) VisitGetClientResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -384,6 +406,15 @@ func (response DeleteClientScope204Response) VisitDeleteClientScopeResponse(w ht
 	return nil
 }
 
+type DeleteClientScope404JSONResponse Error
+
+func (response DeleteClientScope404JSONResponse) VisitDeleteClientScopeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type DeleteClientScope500JSONResponse Error
 
 func (response DeleteClientScope500JSONResponse) VisitDeleteClientScopeResponse(w http.ResponseWriter) error {
@@ -403,12 +434,21 @@ type GetClientScopesResponseObject interface {
 
 type GetClientScopes200JSONResponse struct {
 	PassthroughResponse *map[string]interface{} `json:"passthroughResponse,omitempty"`
-	Scopes              []Scope                 `json:"scopes"`
+	Scopes              []string                `json:"scopes"`
 }
 
 func (response GetClientScopes200JSONResponse) VisitGetClientScopesResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetClientScopes404JSONResponse Error
+
+func (response GetClientScopes404JSONResponse) VisitGetClientScopesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -449,6 +489,15 @@ func (response AddClientScope204Response) VisitAddClientScopeResponse(w http.Res
 	return nil
 }
 
+type AddClientScope404JSONResponse Error
+
+func (response AddClientScope404JSONResponse) VisitAddClientScopeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type AddClientScope409JSONResponse Error
 
 func (response AddClientScope409JSONResponse) VisitAddClientScopeResponse(w http.ResponseWriter) error {
@@ -481,6 +530,15 @@ type DeleteScope204Response struct {
 func (response DeleteScope204Response) VisitDeleteScopeResponse(w http.ResponseWriter) error {
 	w.WriteHeader(204)
 	return nil
+}
+
+type DeleteScope404JSONResponse Error
+
+func (response DeleteScope404JSONResponse) VisitDeleteScopeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type DeleteScope500JSONResponse Error
@@ -527,17 +585,6 @@ type CreateScopeRequestObject struct {
 
 type CreateScopeResponseObject interface {
 	VisitCreateScopeResponse(w http.ResponseWriter) error
-}
-
-type CreateScope200JSONResponse struct {
-	PassthroughResponse *map[string]interface{} `json:"passthroughResponse,omitempty"`
-}
-
-func (response CreateScope200JSONResponse) VisitCreateScopeResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-
-	return json.NewEncoder(w).Encode(response)
 }
 
 type CreateScope204Response struct {

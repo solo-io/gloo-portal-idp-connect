@@ -16,8 +16,8 @@ type Error struct {
 
 // Scope defines model for Scope.
 type Scope struct {
-	Description *string `json:"description,omitempty"`
-	Value       *string `json:"value,omitempty"`
+	Description string `json:"description"`
+	Value       string `json:"value"`
 }
 
 // DeleteClientParams defines parameters for DeleteClient.
@@ -40,9 +40,8 @@ type GetClientParams struct {
 
 // CreateClientJSONBody defines parameters for CreateClient.
 type CreateClientJSONBody struct {
-	GlooPortalTeamId *string                 `json:"glooPortalTeamId,omitempty"`
-	GlooPortalUserId *string                 `json:"glooPortalUserId,omitempty"`
-	Passthrough      *map[string]interface{} `json:"passthrough,omitempty"`
+	ClientName  string                  `json:"clientName"`
+	Passthrough *map[string]interface{} `json:"passthrough,omitempty"`
 }
 
 // DeleteClientScopeParams defines parameters for DeleteClientScope.

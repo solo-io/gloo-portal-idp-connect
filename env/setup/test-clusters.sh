@@ -13,8 +13,8 @@ Sub-commands:
   cleanup   Delete the cluster.
 
 Options:
-  -c     --connector               The connector to use for the installation. Current options are: 'cognito'. Default is 'cognito'.
-         --cognito-user-pool       The user pool id to use for the installation. Default is 'us-west-2_CngONp9kI'.
+  -c  --connector               The connector to use for the installation. Current options are: 'cognito'. Default is 'cognito'.
+      --cognito-user-pool       The user pool id to use for the installation. Default is 'us-west-2_CngONp9kI'.
 Flags:
       --help     Show command usage.
 "

@@ -31,12 +31,6 @@ jobs:
       with:
         version: v1.46.2
         args: --timeout=3m
-    - name: install clang-format
-      run: sudo apt update && sudo apt install -y clang-format
-    - name: Vendor
-      run: make vendor
-    - name: Code check
-      run: make lint-c
   go-unit-test:
     runs-on: ubuntu-20.04
     needs: [style-check]

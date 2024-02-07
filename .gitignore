@@ -9,6 +9,6 @@ vendor/
 .vscode/
 
 # ignore generated helm files
-_helm_sync_dir
+_helm_sync_dir/
 helm/Chart.yaml
 helm/values.yaml

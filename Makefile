@@ -20,7 +20,7 @@ vendor:
 GINKGO_VERSION ?= $(shell cat go.mod | grep ginkgo | cut -d" " -f2 | sed 's/^v0\.\([[:digit:]]\{1,\}\)\.[[:digit:]]\{1,\}$$/1.\1.x/')
 
 .PHONY: install-tools
-install-tools: install-go-tools install-protoc install-esbuild update-ui-deps install-go-test-coverage
+install-tools: install-go-tools
 
 # Go dependencies download
 # Retry is mainly for pipelines, on big installs we can sometimes get a connect error
@@ -115,7 +115,7 @@ kind-load: docker-build
 
 .PHONY: run-e2e-tests
 run-e2e-tests: setup-test-clusters
-	ginkgo run ./test/e2e
+	ginkgo run -v ./test/e2e
 
 .PHONY: setup-test-clusters
 setup-test-clusters:

@@ -21,6 +21,8 @@ fi
 curl "${INSTALL_SCRIPT}" > get_helm.sh
 chmod 700 get_helm.sh
 ./get_helm.sh "$@"
+
+rm -rf get_helm.sh
 if [ "${IS_VERSION_2}" == "true" ]; then
     helm init --client-only
 else

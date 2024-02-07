@@ -1,5 +1,0 @@
-apiVersion: v1
-name: gloo-portal-idp-connect
-description: Gloo Platform Portal IDP Connect sample implementation
-type: application
-version: 0.1.0-2-gdbb32ac-dirty

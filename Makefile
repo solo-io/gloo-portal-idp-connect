@@ -76,6 +76,8 @@ endif
 .PHONY: clean-helm
 clean-helm:
 	rm -rf $(HELM_SYNC_DIR)
+	rm -rf helm/Chart.yaml
+	rm -rf helm/values.yaml
 
 SALT=bpk2CI0R944e
 VERSION_MINOR=$(shell echo "$(VERSION)" | cut -d. -f1-2)
@@ -118,7 +120,7 @@ run-e2e-tests: setup-test-clusters
 	ginkgo run -v ./test/e2e
 
 .PHONY: setup-test-clusters
-setup-test-clusters:
+setup-test-clusters: package-helm
 	./env/setup/test-clusters.sh setup
 
 .PHONY: cleanup-test-clusters

@@ -13,14 +13,10 @@ jobs:
     machine:
       image: ubuntu-2004:2022.07.1
       resource_class: large
-    working_directory: ~/go/src/github.com/solo-io/gloo-mesh-enterprise
+    working_directory: ~/go/src/github.com/solo-io/gloo-portal-idp-connect
     steps:
       - checkout
       - install_dependencies
-      - run:
-          name: package-helm
-          command: |
-              make package-helm
       - run:
           name: << parameters.test_type >>
           command: |

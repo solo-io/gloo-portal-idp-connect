@@ -103,9 +103,7 @@ var _ = Describe("Server", func() {
 
 			It("returns not found code on deletion", func() {
 				resp, err := s.DeleteClient(ctx, portalv1.DeleteClientRequestObject{
-					Params: portalv1.DeleteClientParams{
-						Id: "test-client",
-					},
+					Id: "test-client",
 				})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteClient404JSONResponse{}))
@@ -146,9 +144,7 @@ var _ = Describe("Server", func() {
 
 			It("can delete the client", func() {
 				resp, err := s.DeleteClient(ctx, portalv1.DeleteClientRequestObject{
-					Params: portalv1.DeleteClientParams{
-						Id: clientId,
-					},
+					Id: clientId,
 				})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteClient204Response{}))

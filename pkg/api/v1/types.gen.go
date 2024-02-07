@@ -20,19 +20,16 @@ type Scope struct {
 	Value       string `json:"value"`
 }
 
-// DeleteClientParams defines parameters for DeleteClient.
-type DeleteClientParams struct {
-	// Id (Required) ID for client to delete.
-	Id string `form:"id" json:"id"`
-
-	// Passthrough Optionally include passthrough data as a json string
-	Passthrough *string `form:"passthrough,omitempty" json:"passthrough,omitempty"`
-}
-
 // CreateClientJSONBody defines parameters for CreateClient.
 type CreateClientJSONBody struct {
 	ClientName  string                  `json:"clientName"`
 	Passthrough *map[string]interface{} `json:"passthrough,omitempty"`
+}
+
+// DeleteClientParams defines parameters for DeleteClient.
+type DeleteClientParams struct {
+	// Passthrough Optionally include passthrough data as a json string
+	Passthrough *string `form:"passthrough,omitempty" json:"passthrough,omitempty"`
 }
 
 // UpdateClientScopesJSONBody defines parameters for UpdateClientScopes.

@@ -16,3 +16,4 @@ IDP Connect provides a straightforward and easy-to-setup way of configuring cred
 
 TODO: Add information for devs
 * Install tools
+* (Potential) Allow for AWS IAM Roles for service accounts as cognito auth method.

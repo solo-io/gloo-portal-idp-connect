@@ -74,7 +74,7 @@ func (s *StrictServerHandler) DeleteClient(
 ) (portalv1.DeleteClientResponseObject, error) {
 	_, err := s.cognitoClient.DeleteUserPoolClient(ctx, &cognito.DeleteUserPoolClientInput{
 		UserPoolId: &s.userPool,
-		ClientId:   aws.String(request.Params.Id),
+		ClientId:   aws.String(request.Id),
 	})
 
 	if err != nil {

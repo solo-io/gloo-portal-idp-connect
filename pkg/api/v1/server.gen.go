@@ -16,12 +16,12 @@ import (
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// Deletes a client in the OpenId Connect Provider
-	// (DELETE /client)
-	DeleteClient(ctx echo.Context, params DeleteClientParams) error
 	// Creates a client in the OpenId Connect Provider
-	// (POST /client)
+	// (POST /clients)
 	CreateClient(ctx echo.Context) error
+	// Deletes a client in the OpenId Connect Provider
+	// (DELETE /clients/{id})
+	DeleteClient(ctx echo.Context, id string, params DeleteClientParams) error
 	// Adds scope to a client in the OpenId Connect Provider
 	// (PUT /clients/{id}/scopes)
 	UpdateClientScopes(ctx echo.Context, id string) error
@@ -38,33 +38,6 @@ type ServerInterfaceWrapper struct {
 	Handler ServerInterface
 }
 
-// DeleteClient converts echo context to params.
-func (w *ServerInterfaceWrapper) DeleteClient(ctx echo.Context) error {
-	var err error
-
-	ctx.Set(IdentityTokenScopes, []string{})
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params DeleteClientParams
-	// ------------- Required query parameter "id" -------------
-
-	err = runtime.BindQueryParameter("form", true, true, "id", ctx.QueryParams(), &params.Id)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter id: %s", err))
-	}
-
-	// ------------- Optional query parameter "passthrough" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "passthrough", ctx.QueryParams(), &params.Passthrough)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter passthrough: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.DeleteClient(ctx, params)
-	return err
-}
-
 // CreateClient converts echo context to params.
 func (w *ServerInterfaceWrapper) CreateClient(ctx echo.Context) error {
 	var err error
@@ -73,6 +46,33 @@ func (w *ServerInterfaceWrapper) CreateClient(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.CreateClient(ctx)
+	return err
+}
+
+// DeleteClient converts echo context to params.
+func (w *ServerInterfaceWrapper) DeleteClient(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", ctx.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter id: %s", err))
+	}
+
+	ctx.Set(IdentityTokenScopes, []string{})
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DeleteClientParams
+	// ------------- Optional query parameter "passthrough" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "passthrough", ctx.QueryParams(), &params.Passthrough)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter passthrough: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.DeleteClient(ctx, id, params)
 	return err
 }
 
@@ -160,46 +160,12 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 		Handler: si,
 	}
 
-	router.DELETE(baseURL+"/client", wrapper.DeleteClient)
-	router.POST(baseURL+"/client", wrapper.CreateClient)
+	router.POST(baseURL+"/clients", wrapper.CreateClient)
+	router.DELETE(baseURL+"/clients/:id", wrapper.DeleteClient)
 	router.PUT(baseURL+"/clients/:id/scopes", wrapper.UpdateClientScopes)
 	router.DELETE(baseURL+"/scopes", wrapper.DeleteScope)
 	router.POST(baseURL+"/scopes", wrapper.CreateScope)
 
-}
-
-type DeleteClientRequestObject struct {
-	Params DeleteClientParams
-}
-
-type DeleteClientResponseObject interface {
-	VisitDeleteClientResponse(w http.ResponseWriter) error
-}
-
-type DeleteClient204Response struct {
-}
-
-func (response DeleteClient204Response) VisitDeleteClientResponse(w http.ResponseWriter) error {
-	w.WriteHeader(204)
-	return nil
-}
-
-type DeleteClient404JSONResponse Error
-
-func (response DeleteClient404JSONResponse) VisitDeleteClientResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type DeleteClient500JSONResponse Error
-
-func (response DeleteClient500JSONResponse) VisitDeleteClientResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(500)
-
-	return json.NewEncoder(w).Encode(response)
 }
 
 type CreateClientRequestObject struct {
@@ -228,6 +194,41 @@ func (response CreateClient201JSONResponse) VisitCreateClientResponse(w http.Res
 type CreateClient500JSONResponse Error
 
 func (response CreateClient500JSONResponse) VisitCreateClientResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteClientRequestObject struct {
+	Id     string `json:"id"`
+	Params DeleteClientParams
+}
+
+type DeleteClientResponseObject interface {
+	VisitDeleteClientResponse(w http.ResponseWriter) error
+}
+
+type DeleteClient204Response struct {
+}
+
+func (response DeleteClient204Response) VisitDeleteClientResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteClient404JSONResponse Error
+
+func (response DeleteClient404JSONResponse) VisitDeleteClientResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteClient500JSONResponse Error
+
+func (response DeleteClient500JSONResponse) VisitDeleteClientResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
 
@@ -339,12 +340,12 @@ func (response CreateScope500JSONResponse) VisitCreateScopeResponse(w http.Respo
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
-	// Deletes a client in the OpenId Connect Provider
-	// (DELETE /client)
-	DeleteClient(ctx context.Context, request DeleteClientRequestObject) (DeleteClientResponseObject, error)
 	// Creates a client in the OpenId Connect Provider
-	// (POST /client)
+	// (POST /clients)
 	CreateClient(ctx context.Context, request CreateClientRequestObject) (CreateClientResponseObject, error)
+	// Deletes a client in the OpenId Connect Provider
+	// (DELETE /clients/{id})
+	DeleteClient(ctx context.Context, request DeleteClientRequestObject) (DeleteClientResponseObject, error)
 	// Adds scope to a client in the OpenId Connect Provider
 	// (PUT /clients/{id}/scopes)
 	UpdateClientScopes(ctx context.Context, request UpdateClientScopesRequestObject) (UpdateClientScopesResponseObject, error)
@@ -366,31 +367,6 @@ func NewStrictHandler(ssi StrictServerInterface, middlewares []StrictMiddlewareF
 type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
-}
-
-// DeleteClient operation middleware
-func (sh *strictHandler) DeleteClient(ctx echo.Context, params DeleteClientParams) error {
-	var request DeleteClientRequestObject
-
-	request.Params = params
-
-	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
-		return sh.ssi.DeleteClient(ctx.Request().Context(), request.(DeleteClientRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "DeleteClient")
-	}
-
-	response, err := handler(ctx, request)
-
-	if err != nil {
-		return err
-	} else if validResponse, ok := response.(DeleteClientResponseObject); ok {
-		return validResponse.VisitDeleteClientResponse(ctx.Response())
-	} else if response != nil {
-		return fmt.Errorf("unexpected response type: %T", response)
-	}
-	return nil
 }
 
 // CreateClient operation middleware
@@ -416,6 +392,32 @@ func (sh *strictHandler) CreateClient(ctx echo.Context) error {
 		return err
 	} else if validResponse, ok := response.(CreateClientResponseObject); ok {
 		return validResponse.VisitCreateClientResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// DeleteClient operation middleware
+func (sh *strictHandler) DeleteClient(ctx echo.Context, id string, params DeleteClientParams) error {
+	var request DeleteClientRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteClient(ctx.Request().Context(), request.(DeleteClientRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteClient")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(DeleteClientResponseObject); ok {
+		return validResponse.VisitDeleteClientResponse(ctx.Response())
 	} else if response != nil {
 		return fmt.Errorf("unexpected response type: %T", response)
 	}

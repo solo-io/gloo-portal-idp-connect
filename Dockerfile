@@ -14,4 +14,8 @@ FROM ubuntu:24.04
 
 COPY --from=builder /root/out/idp-connect /app/idp-connect
 
+RUN apt-get update && \
+  apt-get install --no-install-recommends -y \
+  ca-certificates
+
 ENTRYPOINT ["/app/idp-connect"]

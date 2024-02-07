@@ -1,3 +1,12 @@
+DEPSGOBIN:=$(shell pwd)/.bin
+export PATH:=$(DEPSGOBIN):$(PATH)
+export GOBIN:=$(DEPSGOBIN)
+
+.PHONY: clean
+clean: clean-helm
+	rm -rf vendor*
+	rm -rf $(DEPSGOBIN)
+
 .PHONY: generate
 generate: go-generate
 
@@ -7,8 +16,24 @@ vendor:
 	go mod download
 	go mod vendor
 
-install-tools:
+# use the version from go.mod
+GINKGO_VERSION ?= $(shell cat go.mod | grep ginkgo | cut -d" " -f2 | sed 's/^v0\.\([[:digit:]]\{1,\}\)\.[[:digit:]]\{1,\}$$/1.\1.x/')
+
+.PHONY: install-tools
+install-tools: install-go-tools install-protoc install-esbuild update-ui-deps install-go-test-coverage
+
+# Go dependencies download
+# Retry is mainly for pipelines, on big installs we can sometimes get a connect error
+.PHONY: mod-download
+mod-download:
+	go mod download
+
+# Go tools installation
+.PHONY: install-go-tools
+install-go-tools: mod-download
+	mkdir -p $(DEPSGOBIN)
 	go install go.uber.org/mock/mockgen@latest
+	go install github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
 
 # Run go-generate on all sub-packages. This generates mocks and primitives used in the portal API implementation.
 .PHONY: go-generate
@@ -81,3 +106,21 @@ set-version:
 	# .bak for Linux/Mac portability
 	sed -i.bak 's/%repo-dir%/'$(REPO_DIR)'/' $(CHART_DIR)/values.yaml
 	rm -rf $(CHART_DIR)/values.yaml.bak
+
+CLUSTER ?= kind
+
+.PHONY: load-docker
+kind-load: docker-build
+	kind load docker-image --name $(CLUSTER) $(DOCKER_IMAGE)
+
+.PHONY: run-e2e-tests
+run-e2e-tests: setup-test-clusters
+	ginkgo run ./test/e2e
+
+.PHONY: setup-test-clusters
+setup-test-clusters:
+	./env/setup/test-clusters.sh setup
+
+.PHONY: cleanup-test-clusters
+cleanup-test-clusters:
+	./env/setup/test-clusters.sh cleanup

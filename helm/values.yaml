@@ -1,9 +1,12 @@
 fullname: gloo-portal-idp-connect
 image:
   hub: us-docker.pkg.dev
-  repository: gloo-mesh/gloo-portal-idp-connect
-  tag: 0.1.0
+  repository: gloo-mesh/gloo-portal-idp-connect/gloo-portal-idp-connect
+  tag: 0.1.0-2-gdbb32ac-dirty
   pullPolicy: Always
+service:
+  # Port for IDP Connect service to listen on. This is also the port the service will be configured to listen on.
+  port: 80
 # Connector to use in IDP connect sample. Supported connectors are: 'cognito'
 connector: cognito
 # Configuration for the cognito connector
@@ -12,6 +15,17 @@ cognito:
   userPoolId:
     # ID of the resource server to create scopes within
   resourceServer: "access"
+  aws:
+    # (Required) Name of the secret containing AWS credentials
+    secretName: cognito-aws
+    # (Required) AWS region to use
+    region: us-west-2
+    # (Required) AWS access key ID
+    accessKeyId: ""
+    # (Required) AWS secret access key
+    secretAccessKey: ""
+    # AWS session token
+    sessionToken: ""
 resources:
   container:
     limit:

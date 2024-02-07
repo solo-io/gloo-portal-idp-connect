@@ -6,7 +6,7 @@ openapi: 3.0.0
 servers:
   - url: https://api.gloo-platform-portal.com/v1
 paths:
-  /client:
+  /clients:
     post:
       description: Creates a client in the Open Id Connect Provider that the SPI (Server Provider Interface) implementation integrates with.  `glooPortalUser` and `glooPortalTeam` are optional parameters that will link the `clientId` returned with the user/team id if it is provided. In addition, if `clientMetadata` is returned, it will be stored as a json string in the database in case additional client metadata is needed in future requests to get, update, or delete the client. The `clientSecret` is never stored in the database and will only be shown to the user once. Identity token is required to validate user is associated with the given client
       operationId: CreateClient
@@ -66,13 +66,14 @@ paths:
       summary: Creates a client in the OpenId Connect Provider
       tags:
         - Clients
+  /clients/{id}:
     delete:
       description: Delete client.
       operationId: DeleteClient
       security:
         - identityToken: []
       parameters:
-        - in: query
+        - in: path
           name: "id"
           required: true
           description: (Required) ID for client to delete.

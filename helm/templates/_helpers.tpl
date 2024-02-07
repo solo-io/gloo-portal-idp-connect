@@ -12,7 +12,8 @@ gloo-portal-idp-connect args command
 {{- define "gloo-portal-idp-connect.cmd.args" -}}
 {{- if eq .Values.connector "cognito"}}
   - cognito
-  - --user-pool={{ .Values.cognito.userPoolId }}
+  - --port=8080
+  - --user-pool-id={{ .Values.cognito.userPoolId }}
   - --resource-server={{ .Values.cognito.resourceServer }}
 {{- end }}
 {{- end }}

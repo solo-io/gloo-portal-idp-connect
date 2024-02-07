@@ -26,6 +26,25 @@ spec:
         name: {{ .Values.fullname }}
         args:
         {{- include "gloo-portal-idp-connect.cmd.args" . | nindent 8 }}
+        {{- if eq .Values.connector "cognito"}}
+        env:
+          - name: AWS_ACCESS_KEY_ID
+            value: {{ .Values.cognito.aws.accessKeyId }}
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.cognito.aws.secretName }}
+                key: secretAccessKey
+          - name: AWS_REGION
+            value: {{ .Values.cognito.aws.region }}
+          {{- if .Values.cognito.aws.sessionToken }}
+          - name: AWS_SESSION_TOKEN
+            valueFrom:
+              secretKeyRef:
+                  name: {{ .Values.cognito.aws.secretName }}
+                  key: sessionToken
+          {{- end }}
+        {{- end }}
         resources:
           requests:
             cpu: {{ .Values.resources.container.request.cpu }}

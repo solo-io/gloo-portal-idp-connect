@@ -1,3 +1,11 @@
+## Development
+
+Before you begin, make sure you have all of the required tools installed:
+
+```
+./env/validate-env.sh
+```
+
 # TODO:
 
 * Create middleware to handle loggin requests and responses and exposing those metrics via Prometheus metrics

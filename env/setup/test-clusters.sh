@@ -79,10 +79,10 @@ cur_dir="$(dirname "${BASH_SOURCE[0]}")"
 source "$cur_dir/setup-funcs.sh"
 
 if [ "$OPERATION_TYPE" == "setup" ]; then
-#  create_cluster "${CLUSTER_NAME}"
-#
-#  retry make kind-load
-#
+  create_cluster "${CLUSTER_NAME}"
+
+  retry make kind-load
+
   install_idp_connect "${CONNECTOR}" "${USER_POOL_ID}"
 
   # Apply apps

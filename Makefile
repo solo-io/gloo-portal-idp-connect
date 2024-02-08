@@ -109,6 +109,10 @@ set-version:
 	sed -i.bak 's/%repo-dir%/'$(REPO_DIR)'/' $(CHART_DIR)/values.yaml
 	rm -rf $(CHART_DIR)/values.yaml.bak
 
+.PHONY: run-unit-tests
+run-unit-tests:
+	go test -v ./...
+
 CLUSTER ?= kind
 
 .PHONY: load-docker

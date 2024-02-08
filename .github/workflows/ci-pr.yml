@@ -43,7 +43,7 @@ jobs:
     - name: Vendor
       run: make vendor
     - name: Test
-      run: make test
+      run: make run-unit-tests
   docker-build:
     runs-on: ubuntu-latest
     needs: go-unit-test

@@ -24,7 +24,7 @@ type CreateClientJSONBody struct {
 
 // DeleteClientParams defines parameters for DeleteClient.
 type DeleteClientParams struct {
-	// Passthrough Optionally include passthrough data as a json string
+	// Passthrough Optionally include passthrough data as a json string.
 	Passthrough *string `form:"passthrough,omitempty" json:"passthrough,omitempty"`
 }
 
@@ -39,7 +39,7 @@ type DeleteScopeParams struct {
 	// Scope (Required) Name of the scope we'd like to delete.
 	Scope string `form:"scope" json:"scope"`
 
-	// Passthrough Optionally include passthrough data
+	// Passthrough Optionally include passthrough data.
 	Passthrough *string `form:"passthrough,omitempty" json:"passthrough,omitempty"`
 }
 

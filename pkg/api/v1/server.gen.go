@@ -16,19 +16,19 @@ import (
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// Creates a client in the OpenId Connect Provider
+	// Creates a client in the OpenID Connect Provider.
 	// (POST /clients)
 	CreateClient(ctx echo.Context) error
-	// Deletes a client in the OpenId Connect Provider
+	// Deletes a client in the OpenID Connect Provider.
 	// (DELETE /clients/{id})
 	DeleteClient(ctx echo.Context, id string, params DeleteClientParams) error
-	// Adds scope to a client in the OpenId Connect Provider
+	// Adds scope to a client in the OpenID Connect Provider
 	// (PUT /clients/{id}/scopes)
 	UpdateClientScopes(ctx echo.Context, id string) error
-	// Deletes scope in the OpenId Connect Provider
+	// Deletes scope in the OpenID Connect Provider.
 	// (DELETE /scopes)
 	DeleteScope(ctx echo.Context, params DeleteScopeParams) error
-	// Creates scope in the OpenId Connect Provider
+	// Creates scope in the OpenID Connect Provider. Then, you can add these scopes to the client ID for your Portal apps with the `PUT /client/{id}/scopes` API request
 	// (POST /scopes)
 	CreateScope(ctx echo.Context) error
 }
@@ -168,7 +168,6 @@ type CreateClientResponseObject interface {
 
 type CreateClient201JSONResponse struct {
 	ClientId            *string                 `json:"clientId,omitempty"`
-	ClientMetadata      *map[string]interface{} `json:"clientMetadata,omitempty"`
 	ClientName          *string                 `json:"clientName,omitempty"`
 	ClientSecret        *string                 `json:"clientSecret,omitempty"`
 	PassthroughResponse *map[string]interface{} `json:"passthroughResponse,omitempty"`
@@ -330,19 +329,19 @@ func (response CreateScope500JSONResponse) VisitCreateScopeResponse(w http.Respo
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
-	// Creates a client in the OpenId Connect Provider
+	// Creates a client in the OpenID Connect Provider.
 	// (POST /clients)
 	CreateClient(ctx context.Context, request CreateClientRequestObject) (CreateClientResponseObject, error)
-	// Deletes a client in the OpenId Connect Provider
+	// Deletes a client in the OpenID Connect Provider.
 	// (DELETE /clients/{id})
 	DeleteClient(ctx context.Context, request DeleteClientRequestObject) (DeleteClientResponseObject, error)
-	// Adds scope to a client in the OpenId Connect Provider
+	// Adds scope to a client in the OpenID Connect Provider
 	// (PUT /clients/{id}/scopes)
 	UpdateClientScopes(ctx context.Context, request UpdateClientScopesRequestObject) (UpdateClientScopesResponseObject, error)
-	// Deletes scope in the OpenId Connect Provider
+	// Deletes scope in the OpenID Connect Provider.
 	// (DELETE /scopes)
 	DeleteScope(ctx context.Context, request DeleteScopeRequestObject) (DeleteScopeResponseObject, error)
-	// Creates scope in the OpenId Connect Provider
+	// Creates scope in the OpenID Connect Provider. Then, you can add these scopes to the client ID for your Portal apps with the `PUT /client/{id}/scopes` API request
 	// (POST /scopes)
 	CreateScope(ctx context.Context, request CreateScopeRequestObject) (CreateScopeResponseObject, error)
 }

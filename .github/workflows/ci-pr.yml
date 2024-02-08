@@ -44,6 +44,8 @@ jobs:
         go-version: 1.21.1
     - name: Vendor
       run: make vendor
+    - name: install-tools
+      run: make install-go-tools
     - name: Test
       run: make run-unit-tests
   e2e-tests:

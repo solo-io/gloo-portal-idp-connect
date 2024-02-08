@@ -111,7 +111,7 @@ set-version:
 
 .PHONY: run-unit-tests
 run-unit-tests:
-	go test -v ./internal/...
+	ginkgo run -v ./internal/...
 
 CLUSTER ?= kind
 

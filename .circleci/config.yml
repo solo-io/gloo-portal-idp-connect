@@ -3,8 +3,6 @@ version: 2.1
 # this allows you to use CircleCI's dynamic configuration feature
 setup: true
 
-parameters:
-
 # the continuation orb is required in order to use dynamic configuration
 # See circleci docs (https://circleci.com/developer/orbs/orb/circleci/continuation) and the
 # continuation example (https://circleci.com/docs/2.0/configuration-cookbook/?section=examples-and-guides#a-basic-example)

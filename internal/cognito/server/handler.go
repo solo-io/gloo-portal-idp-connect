@@ -204,7 +204,6 @@ func (s *StrictServerHandler) DeleteScope(
 		Name:       aws.String(s.resourceServer),
 		Scopes:     updatedScopes,
 	})
-
 	if err != nil {
 		return portalv1.DeleteScope500JSONResponse(unwrapCognitoError(err)), nil
 	}
@@ -256,6 +255,9 @@ func (s *StrictServerHandler) CreateScope(
 		Name:       aws.String(s.resourceServer),
 		Scopes:     cognitoScopes,
 	})
+	if err != nil {
+		return portalv1.CreateScope500JSONResponse(unwrapCognitoError(err)), nil
+	}
 
 	return portalv1.CreateScope201Response{}, nil
 }

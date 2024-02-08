@@ -7,24 +7,24 @@ on:
 
 jobs:
   style-check:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v3
       - name: golangci-lint
         if: github.event_name == 'pull_request'
         uses: golangci/golangci-lint-action@v3
         with:
-          version: v1.46.2
+          version: v1.54.2
           args: --timeout=3m
   go-unit-test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: [style-check]
     steps:
       - uses: actions/checkout@v3
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: 1.21.1
       - name: Vendor
         run: make vendor
       - name: Test
@@ -50,7 +50,7 @@ jobs:
           make docker-release
   release-helm:
     name: Release gloo-portal-idp-connect helm chart
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.4.0

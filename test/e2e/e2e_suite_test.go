@@ -3,7 +3,6 @@ package e2e_test
 import (
 	"context"
 	"testing"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -23,6 +22,5 @@ var _ = BeforeSuite(func() {
 	env, err = NewKubeContext("kind-kind")
 	Expect(err).NotTo(HaveOccurred())
 
-	ctx, _ := context.WithTimeout(context.Background(), 90*time.Second)
-	env.CheckPodsInCluster(ctx)
+	env.CheckPodsInCluster(context.Background())
 })

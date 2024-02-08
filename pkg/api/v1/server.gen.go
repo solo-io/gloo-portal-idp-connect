@@ -42,8 +42,6 @@ type ServerInterfaceWrapper struct {
 func (w *ServerInterfaceWrapper) CreateClient(ctx echo.Context) error {
 	var err error
 
-	ctx.Set(IdentityTokenScopes, []string{})
-
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.CreateClient(ctx)
 	return err
@@ -59,8 +57,6 @@ func (w *ServerInterfaceWrapper) DeleteClient(ctx echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter id: %s", err))
 	}
-
-	ctx.Set(IdentityTokenScopes, []string{})
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params DeleteClientParams
@@ -87,8 +83,6 @@ func (w *ServerInterfaceWrapper) UpdateClientScopes(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter id: %s", err))
 	}
 
-	ctx.Set(IdentityTokenScopes, []string{})
-
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.UpdateClientScopes(ctx, id)
 	return err
@@ -97,8 +91,6 @@ func (w *ServerInterfaceWrapper) UpdateClientScopes(ctx echo.Context) error {
 // DeleteScope converts echo context to params.
 func (w *ServerInterfaceWrapper) DeleteScope(ctx echo.Context) error {
 	var err error
-
-	ctx.Set(IdentityTokenScopes, []string{})
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params DeleteScopeParams
@@ -124,8 +116,6 @@ func (w *ServerInterfaceWrapper) DeleteScope(ctx echo.Context) error {
 // CreateScope converts echo context to params.
 func (w *ServerInterfaceWrapper) CreateScope(ctx echo.Context) error {
 	var err error
-
-	ctx.Set(IdentityTokenScopes, []string{})
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.CreateScope(ctx)

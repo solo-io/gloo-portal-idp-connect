@@ -8,10 +8,8 @@ servers:
 paths:
   /clients:
     post:
-      description: Creates a client in the Open Id Connect Provider that the SPI (Server Provider Interface) implementation integrates with.  `glooPortalUser` and `glooPortalTeam` are optional parameters that will link the `clientId` returned with the user/team id if it is provided. In addition, if `clientMetadata` is returned, it will be stored as a json string in the database in case additional client metadata is needed in future requests to get, update, or delete the client. The `clientSecret` is never stored in the database and will only be shown to the user once. Identity token is required to validate user is associated with the given client
+      description: Creates a client in the Open Id Connect Provider that the SPI (Server Provider Interface) implementation integrates with.  `glooPortalUser` and `glooPortalTeam` are optional parameters that will link the `clientId` returned with the user/team id if it is provided. In addition, if `clientMetadata` is returned, it will be stored as a json string in the database in case additional client metadata is needed in future requests to get, update, or delete the client. The `clientSecret` is never stored in the database and will only be shown to the user once.
       operationId: CreateClient
-      security:
-        - identityToken: []
       requestBody:
         description: (Required) clientName for creating name of the client. `passthrough` is directly passed to the SPI (Server Provider Interface) implementation that will create the client in the Open Id Connect Provider.
         required: true
@@ -70,8 +68,6 @@ paths:
     delete:
       description: Delete client.
       operationId: DeleteClient
-      security:
-        - identityToken: []
       parameters:
         - in: path
           name: "id"
@@ -106,8 +102,6 @@ paths:
     put:
       description: Update Client Scopes.
       operationId: UpdateClientScopes
-      security:
-        - identityToken: []
       parameters:
         - in: path
           name: "id"
@@ -116,7 +110,7 @@ paths:
           schema:
             type: string
       requestBody:
-        description: Add scope for a specific client. Identity token is required to validate user is associated with the given client.
+        description: Add scope for a specific client.
         required: true
         content:
           application/json:
@@ -157,10 +151,8 @@ paths:
     post:
       description: Creates scope in the Open Id Connect Provider for a given unique identifier. Different Identity Providers associate scopes with different entities. In AWS Congito the client scope would be created for a `ResourceServer` for a `UserPool`, in keycloak the client scope would be created for a `Realm`, in Okta a client scope would be created for a `Authorization Server` which is associated with a Okta `Application` via an `Access Policy`. In Auth0, a scope is created for a `ResourceServer` which is associated with your API via the API identifier.
       operationId: CreateScope
-      security:
-        - identityToken: []
       requestBody:
-        description: Create scope for a specific client. Identity token is required to validate user is associated with the given client.
+        description: Create scope for a specific client.
         required: true
         content:
           application/json:
@@ -197,8 +189,6 @@ paths:
     delete:
       description: Deletes scope in the Open Id Connect Provider for a given unique identifier. Different Identity Providers associate scopes with different entities. In AWS Congito the client scope would be created for a `ResourceServer` for a `UserPool`, in keycloak the client scope would be created for a `Realm`, in Okta a client scope would be created for a `Authorization Server` which is associated with a Okta `Application` via an `Access Policy`. In Auth0, a scope is created for a `ResourceServer` which is associated with your API via the API identifier.
       operationId: DeleteScope
-      security:
-        - identityToken: []
       parameters:
         - in: query
           name: "scope"
@@ -257,9 +247,3 @@ components:
         reason:
           type: string
           example: "Bad Request"
-  securitySchemes:
-    identityToken:
-      type: apiKey
-      in: cookie
-      name: id_token
-      description: id token cookie from the identity provider used to authenticate the user

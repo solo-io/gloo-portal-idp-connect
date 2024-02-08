@@ -154,6 +154,7 @@ var _ = Describe("Server", func() {
 
 		Context("Scopes", func() {
 			When("resource server does not exist", func() {
+				var resourceServerCreated bool
 				BeforeEach(func() {
 					mockCognitoClient.EXPECT().DescribeResourceServer(ctx, gomock.Any(), gomock.Any()).AnyTimes().Return(
 						nil,
@@ -170,17 +171,34 @@ var _ = Describe("Server", func() {
 						},
 					)
 
+					resourceServerCreated = false
 					// Expect that we create the resource server EXACTLY once.
 					access := resourceServer
-					mockCognitoClient.EXPECT().CreateResourceServer(ctx, gomock.Any(), gomock.Any()).Times(1).Return(
-						&cognito.CreateResourceServerOutput{
-							ResourceServer: &types.ResourceServerType{
-								Identifier: &access,
-								Name:       &access,
-							},
-						},
-						nil,
-					)
+					mockCognitoClient.EXPECT().CreateResourceServer(ctx, gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
+						func(
+							ctx context.Context,
+							input *cognito.CreateResourceServerInput,
+							optFns ...func(*cognito.Options),
+						) (*cognito.CreateResourceServerOutput, error) {
+							if resourceServerCreated {
+								return nil, &smithyhttp.ResponseError{
+									Response: &smithyhttp.Response{
+										Response: &http.Response{
+											StatusCode: 409,
+											Status:     "Conflict",
+										},
+									},
+									Err: errors.New("resource server already exists"),
+								}
+							}
+
+							return &cognito.CreateResourceServerOutput{
+								ResourceServer: &types.ResourceServerType{
+									Identifier: &access,
+									Name:       &access,
+								},
+							}, nil
+						})
 
 					// Updating resource server is valid.
 					mockCognitoClient.EXPECT().UpdateResourceServer(ctx, gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
@@ -212,6 +230,15 @@ var _ = Describe("Server", func() {
 
 					Expect(err).NotTo(HaveOccurred())
 					Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateScope201Response{}))
+				})
+				It("returns not found on delete", func() {
+					resp, err := s.DeleteScope(ctx, portalv1.DeleteScopeRequestObject{
+						Params: portalv1.DeleteScopeParams{
+							Scope: "non-existant-scope",
+						},
+					})
+					Expect(err).NotTo(HaveOccurred())
+					Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteScope404JSONResponse{}))
 				})
 			})
 			When("resource server exists", func() {

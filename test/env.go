@@ -117,6 +117,7 @@ type CurlFromPod struct {
 	Data           string
 	App            string
 	Namespace      string
+	Verbose        bool
 	Headers        []string
 	TimeoutSeconds float32
 	// Container from which curl is executed, defaults to "curl"
@@ -146,6 +147,10 @@ func (c *CurlFromPod) Execute() (string, error) {
 
 	for _, header := range c.Headers {
 		args = append(args, "-H", header)
+	}
+
+	if c.Verbose {
+		args = append(args, "-v")
 	}
 
 	if c.TimeoutSeconds > 0 {

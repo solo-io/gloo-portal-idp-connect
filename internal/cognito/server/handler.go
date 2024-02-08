@@ -3,6 +3,8 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
+	"log"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	cognito "github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
@@ -124,10 +126,19 @@ func (s *StrictServerHandler) UpdateClientScopes(
 	ctx context.Context,
 	request portalv1.UpdateClientScopesRequestObject,
 ) (portalv1.UpdateClientScopesResponseObject, error) {
+	if request.Body == nil {
+		return portalv1.UpdateClientScopes500JSONResponse(newPortal500Error("request body is required")), nil
+	}
+
+	var cognitoScopes []string
+	for _, scope := range request.Body.Scopes {
+		cognitoScopes = append(cognitoScopes, fmt.Sprintf("%s/%s", s.resourceServer, scope))
+	}
+
 	_, err := s.cognitoClient.UpdateUserPoolClient(ctx, &cognito.UpdateUserPoolClientInput{
 		UserPoolId:         &s.userPool,
 		ClientId:           &request.Id,
-		AllowedOAuthScopes: request.Body.Scopes,
+		AllowedOAuthScopes: cognitoScopes,
 	})
 
 	if err != nil {
@@ -153,6 +164,18 @@ func (s *StrictServerHandler) DeleteScope(
 		UserPoolId: &s.userPool,
 		Identifier: aws.String(s.resourceServer),
 	})
+	if err != nil {
+		cognitoErr := unwrapCognitoError(err)
+		return errResponseFactory[portalv1.DeleteScopeResponseObject](
+			cognitoErr,
+			map[int]portalv1.DeleteScopeResponseObject{
+				404: portalv1.DeleteScope404JSONResponse(cognitoErr),
+			},
+			portalv1.DeleteScope500JSONResponse(cognitoErr),
+		), nil
+	}
+
+	log.Printf("Params scope: %v", request.Params.Scope)
 
 	scopeExists := false
 	var updatedScopes []types.ResourceServerScopeType
@@ -160,6 +183,7 @@ func (s *StrictServerHandler) DeleteScope(
 		if scope.ScopeName == nil {
 			continue
 		}
+		log.Printf("Existing scope: %v", *scope.ScopeName)
 
 		if *scope.ScopeName == request.Params.Scope {
 			scopeExists = true

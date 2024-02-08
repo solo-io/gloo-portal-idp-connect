@@ -111,7 +111,7 @@ set-version:
 
 .PHONY: run-unit-tests
 run-unit-tests:
-	go test -v ./...
+	go test -v ./internal/...
 
 CLUSTER ?= kind
 

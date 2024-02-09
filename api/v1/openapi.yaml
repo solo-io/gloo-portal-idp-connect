@@ -1,7 +1,7 @@
 info:
   title: 'Gloo Platform Portal IDP Connect API'
   version: 1.0.0
-  description: Before you begin, set up Gloo Platform Portal with your OpenID Connect (OIDC) provider. Then, IDP Connect API, you can manage the clients and scopes in your OIDC provider that get associated with your Portal apps. For more information, see the [Gloo Platform Portal docs](https://docs.solo.io/gloo-portal/latest/).
+  description: Before you begin, set up Gloo Platform Portal with your OpenID Connect (OIDC) provider. Then with this IDP Connect API, you can manage the clients and API Products in your OIDC provider that get associated with your Portal apps. For more information, see the [Gloo Platform Portal docs](https://docs.solo.io/gloo-portal/latest/).
 openapi: 3.0.0
 servers:
   - url: https://api.gloo-platform-portal.com/v1
@@ -52,6 +52,12 @@ paths:
                       }
                     }
           description: Successfully created client.
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Unexpected error creating client.
           content:
@@ -95,32 +101,32 @@ paths:
       summary: Deletes a client in the OpenID Connect Provider.
       tags:
         - Clients
-  /clients/{id}/scopes:
+  /clients/{id}/api-products:
     put:
-      description: Update Client Scopes.
-      operationId: UpdateClientScopes
+      description: Update Client API Products.
+      operationId: UpdateClientAPIProducts
       parameters:
         - in: path
           name: "id"
           required: true
-          description: (Required) Client ID to add scope to.
+          description: (Required) Client ID to add API Product to.
           schema:
             type: string
       requestBody:
-        description: Add scope for a specific client.
+        description: Add API Product for a specific client.
         required: true
         content:
           application/json:
             schema:
               type: object
               required:
-                - scopes
+                - apiProducts
               properties:
-                scopes:
+                apiProducts:
                   type: array
                   items:
                       type: string
-                      example: "example-scope"
+                      example: "example-api-product"
                 passthrough:
                   type: object
                   example: {
@@ -128,7 +134,13 @@ paths:
                   }
       responses:
         '204':
-          description: Successfully added scopes to client.
+          description: Successfully added API Product to client.
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: Client not found.
           content:
@@ -136,30 +148,30 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '500':
-          description: Unexpected error adding client scopes.
+          description: Unexpected error adding client API Products.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-      summary: Adds scope to a client in the OpenID Connect Provider
+      summary: Adds API Product to a client in the OpenID Connect Provider
       tags:
         - Clients
-  /scopes:
+  /api-products:
     post:
-      description: Creates scope in the Open Id Connect Provider. Different Identity Providers associate scopes with different entities. In AWS Congito the client scope would be created for a `ResourceServer` for a `UserPool`, in keycloak the client scope would be created for a `Realm`, in Okta a client scope would be created for a `Authorization Server` which is associated with a Okta `Application` via an `Access Policy`. In Auth0, a scope is created for a `ResourceServer` which is associated with your API via the API identifier.
-      operationId: CreateScope
+      description: Creates API Product in the Open Id Connect Provider.
+      operationId: CreateAPIProduct
       requestBody:
-        description: Create scope for associated with your Open Id Connect clients.
+        description: Create API Product for associated with your Open Id Connect clients.
         required: true
         content:
           application/json:
             schema:
               type: object
               required:
-                - scope
+                - apiProduct
               properties:
-                scope:
-                  $ref: '#/components/schemas/Scope'
+                apiProduct:
+                  $ref: '#/components/schemas/ApiProduct'
                 passthrough:
                   type: object
                   example: {
@@ -167,30 +179,37 @@ paths:
                   }
       responses:
         '201':
-          description: Successfully created scope.
+          description: Successfully created API Product.
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '409':
-          description: Scope already exists.
+          description: API Product already exists.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '500':
-          description: Unexpected error creating scope.
+          description: Unexpected error creating API Product.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-      summary: Creates scope in the OpenID Connect Provider. Then, you can add these scopes to the client ID for your Portal apps with the `PUT /client/{id}/scopes` API request
+      summary: Creates API Product in the OpenID Connect Provider. Then, you can add this API Product to the client ID for your Portal apps with the `PUT /clients/{id}/api-products` API request
       tags:
-        - Scopes
+        - API Products
+  /api-products/{apiProduct}:
     delete:
-      description: Deletes scope in the Open Id Connect Provider for a given unique identifier. Different Identity Providers associate scopes with different entities. In AWS Congito the client scope would be created for a `ResourceServer` for a `UserPool`, in keycloak the client scope would be created for a `Realm`, in Okta a client scope would be created for a `Authorization Server` which is associated with a Okta `Application` via an `Access Policy`. In Auth0, a scope is created for a `ResourceServer` which is associated with your API via the API identifier.
-      operationId: DeleteScope
+      description: Deletes API Product in the Open Id Connect Provider for a given unique identifier.
+      operationId: DeleteAPIProduct
       parameters:
-        - in: query
-          name: "scope"
+        - in: path
+          name: "apiProduct"
           required: true
-          description: (Required) Name of the scope we'd like to delete.
+          description: (Required) Name of the API Product we'd like to delete.
           schema:
             type: string
         - in: query
@@ -200,35 +219,34 @@ paths:
             type: string
       responses:
         '204':
-          description: Successfully deleted scope.
+          description: Successfully deleted API Product.
         '404':
-          description: Scope not found.
+          description: API Product not found.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '500':
-          description: Unexpected error deleting scope.
+          description: Unexpected error deleting API Product.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-      summary: Deletes scope in the OpenID Connect Provider.
+      summary: Deletes API Product in the OpenID Connect Provider.
       tags:
-        - Scopes
+        - API Products
 components:
   schemas:
-    Scope:
+    ApiProduct:
       required:
-        - value
-        - description
+        - name
       properties:
-        value:
+        name:
           type: string
-          example: "example-scope"
+          example: "example-api-product"
         description:
           type: string
-          example: "example scope description"
+          example: "example API Product description"
     Error:
       required:
         - code

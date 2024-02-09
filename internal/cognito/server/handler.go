@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	cognito "github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
@@ -69,7 +68,7 @@ func NewStrictServerHandler(opts *Options, cognitoClient CognitoClient) *StrictS
 	}
 }
 
-// DeleteClient deletes a client in the OpenId Connect Provider
+// DeleteClient deletes a client in Cognito
 func (s *StrictServerHandler) DeleteClient(
 	ctx context.Context,
 	request portalv1.DeleteClientRequestObject,
@@ -81,27 +80,25 @@ func (s *StrictServerHandler) DeleteClient(
 
 	if err != nil {
 		if err != nil {
-			cognitoErr := unwrapCognitoError(err)
-			return errResponseFactory[portalv1.DeleteClientResponseObject](
-				cognitoErr,
-				map[int]portalv1.DeleteClientResponseObject{
-					404: portalv1.DeleteClient404JSONResponse(cognitoErr),
-				},
-				portalv1.DeleteClient500JSONResponse(cognitoErr),
-			), nil
+			switch cognitoErr := unwrapCognitoError(err); cognitoErr.Code {
+			case 404:
+				return portalv1.DeleteClient404JSONResponse(cognitoErr), nil
+			default:
+				return portalv1.DeleteClient500JSONResponse(cognitoErr), nil
+			}
 		}
 	}
 
 	return portalv1.DeleteClient204Response{}, nil
 }
 
-// CreateClient creates a client in the OpenId Connect Provider
+// CreateClient creates a client in Cognito
 func (s *StrictServerHandler) CreateClient(
 	ctx context.Context,
 	request portalv1.CreateClientRequestObject,
 ) (portalv1.CreateClientResponseObject, error) {
 	if request.Body == nil {
-		return portalv1.CreateClient500JSONResponse(newPortal500Error("request body is required")), nil
+		return portalv1.CreateClient400JSONResponse(newPortal400Error("request body is required")), nil
 	}
 
 	out, err := s.cognitoClient.CreateUserPoolClient(ctx, &cognito.CreateUserPoolClientInput{
@@ -121,18 +118,18 @@ func (s *StrictServerHandler) CreateClient(
 	}, nil
 }
 
-// AddClientScope adds scope to a client in the OpenId Connect Provider
-func (s *StrictServerHandler) UpdateClientScopes(
+// UpdateClientAPIProducts updates scopes for a client in Cognito.
+func (s *StrictServerHandler) UpdateClientAPIProducts(
 	ctx context.Context,
-	request portalv1.UpdateClientScopesRequestObject,
-) (portalv1.UpdateClientScopesResponseObject, error) {
+	request portalv1.UpdateClientAPIProductsRequestObject,
+) (portalv1.UpdateClientAPIProductsResponseObject, error) {
 	if request.Body == nil {
-		return portalv1.UpdateClientScopes500JSONResponse(newPortal500Error("request body is required")), nil
+		return portalv1.UpdateClientAPIProducts400JSONResponse(newPortal400Error("request body is required")), nil
 	}
 
 	var cognitoScopes []string
-	for _, scope := range request.Body.Scopes {
-		cognitoScopes = append(cognitoScopes, fmt.Sprintf("%s/%s", s.resourceServer, scope))
+	for _, apiProduct := range request.Body.ApiProducts {
+		cognitoScopes = append(cognitoScopes, fmt.Sprintf("%s/%s", s.resourceServer, apiProduct))
 	}
 
 	_, err := s.cognitoClient.UpdateUserPoolClient(ctx, &cognito.UpdateUserPoolClientInput{
@@ -142,40 +139,34 @@ func (s *StrictServerHandler) UpdateClientScopes(
 	})
 
 	if err != nil {
-		cognitoErr := unwrapCognitoError(err)
-		return errResponseFactory[portalv1.UpdateClientScopesResponseObject](
-			cognitoErr,
-			map[int]portalv1.UpdateClientScopesResponseObject{
-				404: portalv1.UpdateClientScopes404JSONResponse(cognitoErr),
-			},
-			portalv1.UpdateClientScopes500JSONResponse(cognitoErr),
-		), nil
+		switch cognitoErr := unwrapCognitoError(err); cognitoErr.Code {
+		case 404:
+			return portalv1.UpdateClientAPIProducts404JSONResponse(cognitoErr), nil
+		default:
+			return portalv1.UpdateClientAPIProducts500JSONResponse(cognitoErr), nil
+		}
 	}
 
-	return portalv1.UpdateClientScopes204Response{}, nil
+	return portalv1.UpdateClientAPIProducts204Response{}, nil
 }
 
-// DeleteScope deletes scopes in the OpenId Connect Provider
-func (s *StrictServerHandler) DeleteScope(
+// DeleteAPIProduct deletes scopes in Cognito
+func (s *StrictServerHandler) DeleteAPIProduct(
 	ctx context.Context,
-	request portalv1.DeleteScopeRequestObject,
-) (portalv1.DeleteScopeResponseObject, error) {
+	request portalv1.DeleteAPIProductRequestObject,
+) (portalv1.DeleteAPIProductResponseObject, error) {
 	out, err := s.cognitoClient.DescribeResourceServer(ctx, &cognito.DescribeResourceServerInput{
 		UserPoolId: &s.userPool,
 		Identifier: aws.String(s.resourceServer),
 	})
 	if err != nil {
-		cognitoErr := unwrapCognitoError(err)
-		return errResponseFactory[portalv1.DeleteScopeResponseObject](
-			cognitoErr,
-			map[int]portalv1.DeleteScopeResponseObject{
-				404: portalv1.DeleteScope404JSONResponse(cognitoErr),
-			},
-			portalv1.DeleteScope500JSONResponse(cognitoErr),
-		), nil
+		switch cognitoErr := unwrapCognitoError(err); cognitoErr.Code {
+		case 404:
+			return portalv1.DeleteAPIProduct404JSONResponse(cognitoErr), nil
+		default:
+			return portalv1.DeleteAPIProduct500JSONResponse(cognitoErr), nil
+		}
 	}
-
-	log.Printf("Params scope: %v", request.Params.Scope)
 
 	scopeExists := false
 	var updatedScopes []types.ResourceServerScopeType
@@ -183,9 +174,8 @@ func (s *StrictServerHandler) DeleteScope(
 		if scope.ScopeName == nil {
 			continue
 		}
-		log.Printf("Existing scope: %v", *scope.ScopeName)
 
-		if *scope.ScopeName == request.Params.Scope {
+		if *scope.ScopeName == request.ApiProduct {
 			scopeExists = true
 			continue
 		}
@@ -195,7 +185,7 @@ func (s *StrictServerHandler) DeleteScope(
 
 	if !scopeExists {
 		// Return early as if scope was deleted even if it doesn't exist, since resultant state is the same.
-		return portalv1.DeleteScope404JSONResponse{}, nil
+		return portalv1.DeleteAPIProduct404JSONResponse{}, nil
 	}
 
 	_, err = s.cognitoClient.UpdateResourceServer(ctx, &cognito.UpdateResourceServerInput{
@@ -205,49 +195,55 @@ func (s *StrictServerHandler) DeleteScope(
 		Scopes:     updatedScopes,
 	})
 	if err != nil {
-		return portalv1.DeleteScope500JSONResponse(unwrapCognitoError(err)), nil
+		return portalv1.DeleteAPIProduct500JSONResponse(unwrapCognitoError(err)), nil
 	}
 
-	return portalv1.DeleteScope204Response{}, nil
+	return portalv1.DeleteAPIProduct204Response{}, nil
 }
 
-// CreateScope creates scopes in the OpenId Connect Provider
-func (s *StrictServerHandler) CreateScope(
+// CreateAPIProduct creates scopes in Cognito
+func (s *StrictServerHandler) CreateAPIProduct(
 	ctx context.Context,
-	request portalv1.CreateScopeRequestObject,
-) (portalv1.CreateScopeResponseObject, error) {
+	request portalv1.CreateAPIProductRequestObject,
+) (portalv1.CreateAPIProductResponseObject, error) {
 	if request.Body == nil {
-		return portalv1.CreateScope500JSONResponse(newPortal500Error("request body is required")), nil
+		return portalv1.CreateAPIProduct400JSONResponse(newPortal400Error("request body is required")), nil
 	}
 
-	cognitoScope := apiScopesToCognitoScopeType(request.Body.Scope)
+	if request.Body.ApiProduct.Description == nil {
+		request.Body.ApiProduct.Description = aws.String(request.Body.ApiProduct.Name)
+	}
 
 	out, err := s.cognitoClient.DescribeResourceServer(ctx, &cognito.DescribeResourceServerInput{
 		UserPoolId: &s.userPool,
 		Identifier: aws.String(s.resourceServer),
 	})
 
-	var cognitoScopes []types.ResourceServerScopeType
 	if err != nil {
 		var notFoundErr *types.ResourceNotFoundException
-		if ok := errors.As(err, &notFoundErr); ok {
-			if err = createResourceServer(ctx, s); err != nil {
-				return portalv1.CreateScope500JSONResponse(newPortal500Error(err.Error())), nil
-			}
-		} else {
-			return portalv1.CreateScope500JSONResponse(unwrapCognitoError(err)), nil
+		if !errors.As(err, &notFoundErr) {
+			return portalv1.CreateAPIProduct500JSONResponse(unwrapCognitoError(err)), nil
 		}
-	} else {
+
+		// If Resource Server does not exist, create it.
+		if err = createResourceServer(ctx, s); err != nil {
+			return portalv1.CreateAPIProduct500JSONResponse(newPortal500Error(err.Error())), nil
+		}
+	}
+
+	var cognitoScopes []types.ResourceServerScopeType
+	if out != nil {
 		cognitoScopes = out.ResourceServer.Scopes
 	}
 
+	inScope := apiProductToCognitoScopeType(request.Body.ApiProduct)
 	for _, scope := range cognitoScopes {
-		if *scope.ScopeName == *cognitoScope.ScopeName {
-			return portalv1.CreateScope409JSONResponse(newPortalError(409, "Resource Exists", "scope already exists")), nil
+		if *scope.ScopeName == *inScope.ScopeName {
+			return portalv1.CreateAPIProduct409JSONResponse(newPortalError(409, "Resource Exists", "scope already exists")), nil
 		}
 	}
 
-	cognitoScopes = append(cognitoScopes, cognitoScope)
+	cognitoScopes = append(cognitoScopes, inScope)
 
 	_, err = s.cognitoClient.UpdateResourceServer(ctx, &cognito.UpdateResourceServerInput{
 		UserPoolId: &s.userPool,
@@ -256,10 +252,10 @@ func (s *StrictServerHandler) CreateScope(
 		Scopes:     cognitoScopes,
 	})
 	if err != nil {
-		return portalv1.CreateScope500JSONResponse(unwrapCognitoError(err)), nil
+		return portalv1.CreateAPIProduct500JSONResponse(unwrapCognitoError(err)), nil
 	}
 
-	return portalv1.CreateScope201Response{}, nil
+	return portalv1.CreateAPIProduct201Response{}, nil
 }
 
 func unwrapCognitoError(err error) portalv1.Error {
@@ -292,11 +288,4 @@ func createResourceServer(ctx context.Context, s *StrictServerHandler) error {
 	})
 
 	return err
-}
-
-func errResponseFactory[respIface interface{}](err portalv1.Error, respMap map[int]respIface, def respIface) respIface {
-	if valErr, ok := respMap[err.Code]; ok {
-		return valErr
-	}
-	return def
 }

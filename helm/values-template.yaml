@@ -32,13 +32,13 @@ resources:
       cpu: 300m
       memory: 200Mi
     request:
-      cpu: 100m
-      memory: 200Mi
+      cpu: 10m
+      memory: 32Mi
   init:
     limit:
       cpu: 300m
       memory: 50Mi
     request:
-      cpu: 100m
-      memory: 50Mi
+      cpu: 10m
+      memory: 32Mi
 revisionHistoryLimit: 10

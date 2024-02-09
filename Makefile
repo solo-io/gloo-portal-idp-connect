@@ -79,7 +79,6 @@ clean-helm:
 	rm -rf helm/Chart.yaml
 	rm -rf helm/values.yaml
 
-SALT=bpk2CI0R944e
 VERSION_MINOR=$(shell echo "$(VERSION)" | cut -d. -f1-2)
 HUB ?= us-docker.pkg.dev
 REPO_DIR=gloo-portal-idp-connect
@@ -91,10 +90,10 @@ docker-build:
 	docker build . -t $(DOCKER_IMAGE)
 
 .PHONY: docker-release
-docker-release:
+docker-release: docker-build
 ifeq ($(RELEASE),"true")
 	VERSION_MINOR=${VERSION_MINOR} REPO_DIR=${REPO_DIR} scripts/release-docker.sh
-	docker buildx create --use --name multi-builder --platform linux/amd64,linux/arm64
+	docker buildx create --use --name multi-builder --platform linux/amd64,linux/arm64 || true
 	docker buildx use multi-builder
 	docker buildx build --platform=linux/amd64,linux/arm64 --push . -t $(DOCKER_IMAGE)
 else
@@ -115,7 +114,7 @@ run-unit-tests:
 
 CLUSTER ?= kind
 
-.PHONY: load-docker
+.PHONY: kind-load
 kind-load: docker-build
 	kind load docker-image --name $(CLUSTER) $(DOCKER_IMAGE)
 

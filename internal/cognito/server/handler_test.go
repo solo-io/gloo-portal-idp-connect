@@ -98,7 +98,7 @@ var _ = Describe("Server", func() {
 			It("returns error code on nil body", func() {
 				resp, err := s.CreateClient(ctx, portalv1.CreateClientRequestObject{})
 				Expect(err).NotTo(HaveOccurred())
-				Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateClient500JSONResponse{}))
+				Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateClient400JSONResponse{}))
 			})
 
 			It("returns not found code on deletion", func() {
@@ -152,7 +152,7 @@ var _ = Describe("Server", func() {
 
 		})
 
-		Context("Scopes", func() {
+		Context("APIProducts", func() {
 			When("resource server does not exist", func() {
 				var resourceServerCreated bool
 				BeforeEach(func() {
@@ -217,34 +217,32 @@ var _ = Describe("Server", func() {
 						})
 				})
 
-				It("can create a scope", func() {
-					scope := "test-scope"
-					resp, err := s.CreateScope(ctx, portalv1.CreateScopeRequestObject{
-						Body: &portalv1.CreateScopeJSONRequestBody{
-							Scope: portalv1.Scope{
-								Value:       scope,
-								Description: "test description",
+				It("can create a APIProduct", func() {
+					APIProduct := "test-APIProduct"
+					resp, err := s.CreateAPIProduct(ctx, portalv1.CreateAPIProductRequestObject{
+						Body: &portalv1.CreateAPIProductJSONRequestBody{
+							ApiProduct: portalv1.ApiProduct{
+								Name:        APIProduct,
+								Description: aws.String("test description"),
 							},
 						},
 					})
 
 					Expect(err).NotTo(HaveOccurred())
-					Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateScope201Response{}))
+					Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateAPIProduct201Response{}))
 				})
 				It("returns not found on delete", func() {
-					resp, err := s.DeleteScope(ctx, portalv1.DeleteScopeRequestObject{
-						Params: portalv1.DeleteScopeParams{
-							Scope: "non-existant-scope",
-						},
+					resp, err := s.DeleteAPIProduct(ctx, portalv1.DeleteAPIProductRequestObject{
+						ApiProduct: "non-existant-APIProduct",
 					})
 					Expect(err).NotTo(HaveOccurred())
-					Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteScope404JSONResponse{}))
+					Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteAPIProduct404JSONResponse{}))
 				})
 			})
 			When("resource server exists", func() {
-				var expScope = "test-scope"
+				var expScope = "test-APIProduct"
 				BeforeEach(func() {
-					// Mock resource server with a single scope.
+					// Mock resource server with a single APIProduct.
 					access := resourceServer
 					mockCognitoClient.EXPECT().DescribeResourceServer(ctx, gomock.Any(), gomock.Any()).AnyTimes().Return(
 						&cognito.DescribeResourceServerOutput{
@@ -276,61 +274,57 @@ var _ = Describe("Server", func() {
 							}, nil
 						})
 				})
-				It("can create scope", func() {
-					scope := "new-scope"
-					resp, err := s.CreateScope(ctx, portalv1.CreateScopeRequestObject{
-						Body: &portalv1.CreateScopeJSONRequestBody{
-							Scope: portalv1.Scope{
-								Value:       scope,
-								Description: "test description",
+				It("can create APIProduct", func() {
+					APIProduct := "new-APIProduct"
+					resp, err := s.CreateAPIProduct(ctx, portalv1.CreateAPIProductRequestObject{
+						Body: &portalv1.CreateAPIProductJSONRequestBody{
+							ApiProduct: portalv1.ApiProduct{
+								Name:        APIProduct,
+								Description: aws.String("test description"),
 							},
 						},
 					})
 					Expect(err).NotTo(HaveOccurred())
-					Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateScope201Response{}))
+					Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateAPIProduct201Response{}))
 				})
-				It("returns not found if deleting scope not present", func() {
-					resp, err := s.DeleteScope(ctx, portalv1.DeleteScopeRequestObject{
-						Params: portalv1.DeleteScopeParams{
-							Scope: "non-existant-scope",
-						},
+				It("returns not found if deleting APIProduct not present", func() {
+					resp, err := s.DeleteAPIProduct(ctx, portalv1.DeleteAPIProductRequestObject{
+						ApiProduct: "non-existant-APIProduct",
 					})
 					Expect(err).NotTo(HaveOccurred())
-					Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteScope404JSONResponse{}))
+					Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteAPIProduct404JSONResponse{}))
 				})
 
-				It("can delete the scope", func() {
-					resp, err := s.DeleteScope(ctx, portalv1.DeleteScopeRequestObject{
-						Params: portalv1.DeleteScopeParams{
-							Scope: expScope,
-						},
+				It("can delete the APIProduct", func() {
+					resp, err := s.DeleteAPIProduct(ctx, portalv1.DeleteAPIProductRequestObject{
+						ApiProduct: expScope,
 					})
 					Expect(err).NotTo(HaveOccurred())
-					Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteScope204Response{}))
+					Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteAPIProduct204Response{}))
 				})
 				It("returns that there is a resource conflict", func() {
-					resp, err := s.CreateScope(ctx, portalv1.CreateScopeRequestObject{
-						Body: &portalv1.CreateScopeJSONRequestBody{
-							Scope: portalv1.Scope{
-								Value:       expScope,
-								Description: "test description",
+					resp, err := s.CreateAPIProduct(ctx, portalv1.CreateAPIProductRequestObject{
+						Body: &portalv1.CreateAPIProductJSONRequestBody{
+							ApiProduct: portalv1.ApiProduct{
+								Name:        expScope,
+								Description: aws.String("test description"),
 							},
 						},
 					})
 					Expect(err).NotTo(HaveOccurred())
-					Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateScope409JSONResponse{}))
+					Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateAPIProduct409JSONResponse{}))
 				})
 			})
 		})
-		Context("Client Scopes", func() {
+		Context("Client APIProducts", func() {
 			var (
 				expClient = "test-client"
 
-				expScopes = []string{"tracks"}
+				expAPIProducts = []string{"tracks"}
 			)
 
 			BeforeEach(func() {
-				// Mock with a single known user and single expScope.
+				// Mock with a single known user and single expAPIProduct.
 				mockCognitoClient.EXPECT().UpdateUserPoolClient(ctx, gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
 					func(
 						ctx context.Context,
@@ -362,26 +356,26 @@ var _ = Describe("Server", func() {
 			})
 			When("client does not exist", func() {
 				It("returns not found on update", func() {
-					resp, err := s.UpdateClientScopes(ctx, portalv1.UpdateClientScopesRequestObject{
+					resp, err := s.UpdateClientAPIProducts(ctx, portalv1.UpdateClientAPIProductsRequestObject{
 						Id: "non-existant-client",
-						Body: &portalv1.UpdateClientScopesJSONRequestBody{
-							Scopes: expScopes,
+						Body: &portalv1.UpdateClientAPIProductsJSONRequestBody{
+							ApiProducts: expAPIProducts,
 						},
 					})
 					Expect(err).NotTo(HaveOccurred())
-					Expect(resp).To(BeAssignableToTypeOf(portalv1.UpdateClientScopes404JSONResponse{}))
+					Expect(resp).To(BeAssignableToTypeOf(portalv1.UpdateClientAPIProducts404JSONResponse{}))
 				})
 			})
 			When("referencing client that does exist", func() {
-				It("can update client scopes", func() {
-					resp, err := s.UpdateClientScopes(ctx, portalv1.UpdateClientScopesRequestObject{
+				It("can update client APIProducts", func() {
+					resp, err := s.UpdateClientAPIProducts(ctx, portalv1.UpdateClientAPIProductsRequestObject{
 						Id: expClient,
-						Body: &portalv1.UpdateClientScopesJSONRequestBody{
-							Scopes: expScopes,
+						Body: &portalv1.UpdateClientAPIProductsJSONRequestBody{
+							ApiProducts: expAPIProducts,
 						},
 					})
 					Expect(err).NotTo(HaveOccurred())
-					Expect(resp).To(BeAssignableToTypeOf(portalv1.UpdateClientScopes204Response{}))
+					Expect(resp).To(BeAssignableToTypeOf(portalv1.UpdateClientAPIProducts204Response{}))
 				})
 			})
 		})

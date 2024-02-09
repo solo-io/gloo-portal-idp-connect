@@ -6,7 +6,7 @@ if [ "${VERSION_MINOR}" = "" ]; then
 fi
 
 if [ "${REPO_DIR}" = "" ]; then
-  echo "Need to pass in a REPO_DIR (e.g. gloo-network-agent-cec68debcb00)"
+  echo "Need to pass in a REPO_DIR (e.g. gloo-portal-idp-connect)"
   exit 1;
 fi
 

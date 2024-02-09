@@ -20,4 +20,4 @@ the go code.
 
 ## Generated Code
 
-The generated go code lives in `server.go`, `types.go` and `spec.go` files under each version directory in `pkg/portal/api`.
+The generated go code lives in `server.go`, `types.go` and `spec.go` files under each version directory in `pkg/api`.

@@ -18,8 +18,8 @@ var _ = Describe("E2e", Ordered, func() {
 	// clientId is the ID of the client we will create
 	var (
 		clientId string
-		// testScope is the name of the scope we will create.
-		testScope string
+		// testApiProduct is the name of the scope we will create.
+		testApiProduct string
 		// clientName is the name of the client we will create.
 		clientName string
 	)
@@ -28,7 +28,7 @@ var _ = Describe("E2e", Ordered, func() {
 		nowString := strings.Replace(time.Now().Format(time.RFC3339), ":", "-", -1)
 		// Unique scope string to make sure there are no conflicts between runs of e2e tests and so that,
 		// should things go wrong, we can identify when the scope was created.
-		testScope = fmt.Sprintf("e2e-test-scope-%s", nowString)
+		testApiProduct = fmt.Sprintf("e2e-test-api-product-%s", nowString)
 		// Unique client name dated with current time so that we can get a gauge on the clients we are creating when,
 		// and to avoid conflicts.
 		clientName = fmt.Sprintf("e2e-test-client-%s", nowString)
@@ -56,12 +56,12 @@ var _ = Describe("E2e", Ordered, func() {
 		clientId = *createObj.ClientId
 	})
 
-	It("can create scopes", func() {
+	It("can create API Products", func() {
 		curlFromPod := &test.CurlFromPod{
-			Url:     "idp-connect/scopes",
+			Url:     "idp-connect/api-products",
 			Cluster: env,
 			Method:  "POST",
-			Data:    fmt.Sprintf(`{"scope": {"value": "%s", "description": "e2e test scope"}}`, testScope),
+			Data:    fmt.Sprintf(`{"apiProduct": {"name": "%s", "description": "e2e test API Product"}}`, testApiProduct),
 			Verbose: true,
 			App:     "curl",
 			Headers: []string{"Content-Type: application/json"},
@@ -72,12 +72,12 @@ var _ = Describe("E2e", Ordered, func() {
 		Expect(out).To(ContainSubstring("201 Created"))
 	})
 
-	It("can add scopes to client", func() {
+	It("can add API Products to client", func() {
 		curlFromPod := &test.CurlFromPod{
-			Url:     "idp-connect/clients/" + clientId + "/scopes",
+			Url:     "idp-connect/clients/" + clientId + "/api-products",
 			Cluster: env,
 			Method:  "PUT",
-			Data:    fmt.Sprintf(`{"scopes":["%s"]}`, testScope),
+			Data:    fmt.Sprintf(`{"apiProducts":["%s"]}`, testApiProduct),
 			Verbose: true,
 			App:     "curl",
 			Headers: []string{"Content-Type: application/json"},
@@ -88,12 +88,12 @@ var _ = Describe("E2e", Ordered, func() {
 		Expect(out).To(ContainSubstring("204 No Content"))
 	})
 
-	It("can remove scopes from client", func() {
+	It("can remove API Products from client", func() {
 		curlFromPod := &test.CurlFromPod{
-			Url:     "idp-connect/clients/" + clientId + "/scopes",
+			Url:     "idp-connect/clients/" + clientId + "/api-products",
 			Cluster: env,
 			Method:  "PUT",
-			Data:    `{"scopes":[]}`,
+			Data:    `{"apiProducts":[]}`,
 			Verbose: true,
 			App:     "curl",
 			Headers: []string{"Content-Type: application/json"},
@@ -118,9 +118,9 @@ var _ = Describe("E2e", Ordered, func() {
 		Expect(out).To(ContainSubstring("204 No Content"))
 	})
 
-	It("can delete scope", func() {
+	It("can delete API Product", func() {
 		curlFromPod := &test.CurlFromPod{
-			Url:     fmt.Sprintf("idp-connect/scopes?scope=%s", url.QueryEscape(testScope)),
+			Url:     fmt.Sprintf("idp-connect/api-products/%s", url.QueryEscape(testApiProduct)),
 			Cluster: env,
 			Method:  "DELETE",
 			Verbose: true,

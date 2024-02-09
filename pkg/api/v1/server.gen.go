@@ -16,26 +16,60 @@ import (
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Creates API Product in the OpenID Connect Provider. Then, you can add this API Product to the client ID for your Portal apps with the `PUT /clients/{id}/api-products` API request
+	// (POST /api-products)
+	CreateAPIProduct(ctx echo.Context) error
+	// Deletes API Product in the OpenID Connect Provider.
+	// (DELETE /api-products/{apiProduct})
+	DeleteAPIProduct(ctx echo.Context, apiProduct string, params DeleteAPIProductParams) error
 	// Creates a client in the OpenID Connect Provider.
 	// (POST /clients)
 	CreateClient(ctx echo.Context) error
 	// Deletes a client in the OpenID Connect Provider.
 	// (DELETE /clients/{id})
 	DeleteClient(ctx echo.Context, id string, params DeleteClientParams) error
-	// Adds scope to a client in the OpenID Connect Provider
-	// (PUT /clients/{id}/scopes)
-	UpdateClientScopes(ctx echo.Context, id string) error
-	// Deletes scope in the OpenID Connect Provider.
-	// (DELETE /scopes)
-	DeleteScope(ctx echo.Context, params DeleteScopeParams) error
-	// Creates scope in the OpenID Connect Provider. Then, you can add these scopes to the client ID for your Portal apps with the `PUT /client/{id}/scopes` API request
-	// (POST /scopes)
-	CreateScope(ctx echo.Context) error
+	// Adds API Product to a client in the OpenID Connect Provider
+	// (PUT /clients/{id}/api-products)
+	UpdateClientAPIProducts(ctx echo.Context, id string) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
 type ServerInterfaceWrapper struct {
 	Handler ServerInterface
+}
+
+// CreateAPIProduct converts echo context to params.
+func (w *ServerInterfaceWrapper) CreateAPIProduct(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.CreateAPIProduct(ctx)
+	return err
+}
+
+// DeleteAPIProduct converts echo context to params.
+func (w *ServerInterfaceWrapper) DeleteAPIProduct(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "apiProduct" -------------
+	var apiProduct string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "apiProduct", ctx.Param("apiProduct"), &apiProduct, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter apiProduct: %s", err))
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DeleteAPIProductParams
+	// ------------- Optional query parameter "passthrough" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "passthrough", ctx.QueryParams(), &params.Passthrough)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter passthrough: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.DeleteAPIProduct(ctx, apiProduct, params)
+	return err
 }
 
 // CreateClient converts echo context to params.
@@ -72,8 +106,8 @@ func (w *ServerInterfaceWrapper) DeleteClient(ctx echo.Context) error {
 	return err
 }
 
-// UpdateClientScopes converts echo context to params.
-func (w *ServerInterfaceWrapper) UpdateClientScopes(ctx echo.Context) error {
+// UpdateClientAPIProducts converts echo context to params.
+func (w *ServerInterfaceWrapper) UpdateClientAPIProducts(ctx echo.Context) error {
 	var err error
 	// ------------- Path parameter "id" -------------
 	var id string
@@ -84,41 +118,7 @@ func (w *ServerInterfaceWrapper) UpdateClientScopes(ctx echo.Context) error {
 	}
 
 	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.UpdateClientScopes(ctx, id)
-	return err
-}
-
-// DeleteScope converts echo context to params.
-func (w *ServerInterfaceWrapper) DeleteScope(ctx echo.Context) error {
-	var err error
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params DeleteScopeParams
-	// ------------- Required query parameter "scope" -------------
-
-	err = runtime.BindQueryParameter("form", true, true, "scope", ctx.QueryParams(), &params.Scope)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter scope: %s", err))
-	}
-
-	// ------------- Optional query parameter "passthrough" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "passthrough", ctx.QueryParams(), &params.Passthrough)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter passthrough: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.DeleteScope(ctx, params)
-	return err
-}
-
-// CreateScope converts echo context to params.
-func (w *ServerInterfaceWrapper) CreateScope(ctx echo.Context) error {
-	var err error
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.CreateScope(ctx)
+	err = w.Handler.UpdateClientAPIProducts(ctx, id)
 	return err
 }
 
@@ -150,12 +150,90 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 		Handler: si,
 	}
 
+	router.POST(baseURL+"/api-products", wrapper.CreateAPIProduct)
+	router.DELETE(baseURL+"/api-products/:apiProduct", wrapper.DeleteAPIProduct)
 	router.POST(baseURL+"/clients", wrapper.CreateClient)
 	router.DELETE(baseURL+"/clients/:id", wrapper.DeleteClient)
-	router.PUT(baseURL+"/clients/:id/scopes", wrapper.UpdateClientScopes)
-	router.DELETE(baseURL+"/scopes", wrapper.DeleteScope)
-	router.POST(baseURL+"/scopes", wrapper.CreateScope)
+	router.PUT(baseURL+"/clients/:id/api-products", wrapper.UpdateClientAPIProducts)
 
+}
+
+type CreateAPIProductRequestObject struct {
+	Body *CreateAPIProductJSONRequestBody
+}
+
+type CreateAPIProductResponseObject interface {
+	VisitCreateAPIProductResponse(w http.ResponseWriter) error
+}
+
+type CreateAPIProduct201Response struct {
+}
+
+func (response CreateAPIProduct201Response) VisitCreateAPIProductResponse(w http.ResponseWriter) error {
+	w.WriteHeader(201)
+	return nil
+}
+
+type CreateAPIProduct400JSONResponse Error
+
+func (response CreateAPIProduct400JSONResponse) VisitCreateAPIProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateAPIProduct409JSONResponse Error
+
+func (response CreateAPIProduct409JSONResponse) VisitCreateAPIProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateAPIProduct500JSONResponse Error
+
+func (response CreateAPIProduct500JSONResponse) VisitCreateAPIProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteAPIProductRequestObject struct {
+	ApiProduct string `json:"apiProduct"`
+	Params     DeleteAPIProductParams
+}
+
+type DeleteAPIProductResponseObject interface {
+	VisitDeleteAPIProductResponse(w http.ResponseWriter) error
+}
+
+type DeleteAPIProduct204Response struct {
+}
+
+func (response DeleteAPIProduct204Response) VisitDeleteAPIProductResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteAPIProduct404JSONResponse Error
+
+func (response DeleteAPIProduct404JSONResponse) VisitDeleteAPIProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteAPIProduct500JSONResponse Error
+
+func (response DeleteAPIProduct500JSONResponse) VisitDeleteAPIProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type CreateClientRequestObject struct {
@@ -176,6 +254,15 @@ type CreateClient201JSONResponse struct {
 func (response CreateClient201JSONResponse) VisitCreateClientResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateClient400JSONResponse Error
+
+func (response CreateClient400JSONResponse) VisitCreateClientResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -224,103 +311,44 @@ func (response DeleteClient500JSONResponse) VisitDeleteClientResponse(w http.Res
 	return json.NewEncoder(w).Encode(response)
 }
 
-type UpdateClientScopesRequestObject struct {
+type UpdateClientAPIProductsRequestObject struct {
 	Id   string `json:"id"`
-	Body *UpdateClientScopesJSONRequestBody
+	Body *UpdateClientAPIProductsJSONRequestBody
 }
 
-type UpdateClientScopesResponseObject interface {
-	VisitUpdateClientScopesResponse(w http.ResponseWriter) error
+type UpdateClientAPIProductsResponseObject interface {
+	VisitUpdateClientAPIProductsResponse(w http.ResponseWriter) error
 }
 
-type UpdateClientScopes204Response struct {
+type UpdateClientAPIProducts204Response struct {
 }
 
-func (response UpdateClientScopes204Response) VisitUpdateClientScopesResponse(w http.ResponseWriter) error {
+func (response UpdateClientAPIProducts204Response) VisitUpdateClientAPIProductsResponse(w http.ResponseWriter) error {
 	w.WriteHeader(204)
 	return nil
 }
 
-type UpdateClientScopes404JSONResponse Error
+type UpdateClientAPIProducts400JSONResponse Error
 
-func (response UpdateClientScopes404JSONResponse) VisitUpdateClientScopesResponse(w http.ResponseWriter) error {
+func (response UpdateClientAPIProducts400JSONResponse) VisitUpdateClientAPIProductsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateClientAPIProducts404JSONResponse Error
+
+func (response UpdateClientAPIProducts404JSONResponse) VisitUpdateClientAPIProductsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type UpdateClientScopes500JSONResponse Error
+type UpdateClientAPIProducts500JSONResponse Error
 
-func (response UpdateClientScopes500JSONResponse) VisitUpdateClientScopesResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(500)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type DeleteScopeRequestObject struct {
-	Params DeleteScopeParams
-}
-
-type DeleteScopeResponseObject interface {
-	VisitDeleteScopeResponse(w http.ResponseWriter) error
-}
-
-type DeleteScope204Response struct {
-}
-
-func (response DeleteScope204Response) VisitDeleteScopeResponse(w http.ResponseWriter) error {
-	w.WriteHeader(204)
-	return nil
-}
-
-type DeleteScope404JSONResponse Error
-
-func (response DeleteScope404JSONResponse) VisitDeleteScopeResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type DeleteScope500JSONResponse Error
-
-func (response DeleteScope500JSONResponse) VisitDeleteScopeResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(500)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type CreateScopeRequestObject struct {
-	Body *CreateScopeJSONRequestBody
-}
-
-type CreateScopeResponseObject interface {
-	VisitCreateScopeResponse(w http.ResponseWriter) error
-}
-
-type CreateScope201Response struct {
-}
-
-func (response CreateScope201Response) VisitCreateScopeResponse(w http.ResponseWriter) error {
-	w.WriteHeader(201)
-	return nil
-}
-
-type CreateScope409JSONResponse Error
-
-func (response CreateScope409JSONResponse) VisitCreateScopeResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(409)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type CreateScope500JSONResponse Error
-
-func (response CreateScope500JSONResponse) VisitCreateScopeResponse(w http.ResponseWriter) error {
+func (response UpdateClientAPIProducts500JSONResponse) VisitUpdateClientAPIProductsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
 
@@ -329,21 +357,21 @@ func (response CreateScope500JSONResponse) VisitCreateScopeResponse(w http.Respo
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// Creates API Product in the OpenID Connect Provider. Then, you can add this API Product to the client ID for your Portal apps with the `PUT /clients/{id}/api-products` API request
+	// (POST /api-products)
+	CreateAPIProduct(ctx context.Context, request CreateAPIProductRequestObject) (CreateAPIProductResponseObject, error)
+	// Deletes API Product in the OpenID Connect Provider.
+	// (DELETE /api-products/{apiProduct})
+	DeleteAPIProduct(ctx context.Context, request DeleteAPIProductRequestObject) (DeleteAPIProductResponseObject, error)
 	// Creates a client in the OpenID Connect Provider.
 	// (POST /clients)
 	CreateClient(ctx context.Context, request CreateClientRequestObject) (CreateClientResponseObject, error)
 	// Deletes a client in the OpenID Connect Provider.
 	// (DELETE /clients/{id})
 	DeleteClient(ctx context.Context, request DeleteClientRequestObject) (DeleteClientResponseObject, error)
-	// Adds scope to a client in the OpenID Connect Provider
-	// (PUT /clients/{id}/scopes)
-	UpdateClientScopes(ctx context.Context, request UpdateClientScopesRequestObject) (UpdateClientScopesResponseObject, error)
-	// Deletes scope in the OpenID Connect Provider.
-	// (DELETE /scopes)
-	DeleteScope(ctx context.Context, request DeleteScopeRequestObject) (DeleteScopeResponseObject, error)
-	// Creates scope in the OpenID Connect Provider. Then, you can add these scopes to the client ID for your Portal apps with the `PUT /client/{id}/scopes` API request
-	// (POST /scopes)
-	CreateScope(ctx context.Context, request CreateScopeRequestObject) (CreateScopeResponseObject, error)
+	// Adds API Product to a client in the OpenID Connect Provider
+	// (PUT /clients/{id}/api-products)
+	UpdateClientAPIProducts(ctx context.Context, request UpdateClientAPIProductsRequestObject) (UpdateClientAPIProductsResponseObject, error)
 }
 
 type StrictHandlerFunc = strictecho.StrictEchoHandlerFunc
@@ -356,6 +384,61 @@ func NewStrictHandler(ssi StrictServerInterface, middlewares []StrictMiddlewareF
 type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
+}
+
+// CreateAPIProduct operation middleware
+func (sh *strictHandler) CreateAPIProduct(ctx echo.Context) error {
+	var request CreateAPIProductRequestObject
+
+	var body CreateAPIProductJSONRequestBody
+	if err := ctx.Bind(&body); err != nil {
+		return err
+	}
+	request.Body = &body
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateAPIProduct(ctx.Request().Context(), request.(CreateAPIProductRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateAPIProduct")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(CreateAPIProductResponseObject); ok {
+		return validResponse.VisitCreateAPIProductResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
+}
+
+// DeleteAPIProduct operation middleware
+func (sh *strictHandler) DeleteAPIProduct(ctx echo.Context, apiProduct string, params DeleteAPIProductParams) error {
+	var request DeleteAPIProductRequestObject
+
+	request.ApiProduct = apiProduct
+	request.Params = params
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteAPIProduct(ctx.Request().Context(), request.(DeleteAPIProductRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteAPIProduct")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(DeleteAPIProductResponseObject); ok {
+		return validResponse.VisitDeleteAPIProductResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
 }
 
 // CreateClient operation middleware
@@ -413,85 +496,31 @@ func (sh *strictHandler) DeleteClient(ctx echo.Context, id string, params Delete
 	return nil
 }
 
-// UpdateClientScopes operation middleware
-func (sh *strictHandler) UpdateClientScopes(ctx echo.Context, id string) error {
-	var request UpdateClientScopesRequestObject
+// UpdateClientAPIProducts operation middleware
+func (sh *strictHandler) UpdateClientAPIProducts(ctx echo.Context, id string) error {
+	var request UpdateClientAPIProductsRequestObject
 
 	request.Id = id
 
-	var body UpdateClientScopesJSONRequestBody
+	var body UpdateClientAPIProductsJSONRequestBody
 	if err := ctx.Bind(&body); err != nil {
 		return err
 	}
 	request.Body = &body
 
 	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
-		return sh.ssi.UpdateClientScopes(ctx.Request().Context(), request.(UpdateClientScopesRequestObject))
+		return sh.ssi.UpdateClientAPIProducts(ctx.Request().Context(), request.(UpdateClientAPIProductsRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "UpdateClientScopes")
+		handler = middleware(handler, "UpdateClientAPIProducts")
 	}
 
 	response, err := handler(ctx, request)
 
 	if err != nil {
 		return err
-	} else if validResponse, ok := response.(UpdateClientScopesResponseObject); ok {
-		return validResponse.VisitUpdateClientScopesResponse(ctx.Response())
-	} else if response != nil {
-		return fmt.Errorf("unexpected response type: %T", response)
-	}
-	return nil
-}
-
-// DeleteScope operation middleware
-func (sh *strictHandler) DeleteScope(ctx echo.Context, params DeleteScopeParams) error {
-	var request DeleteScopeRequestObject
-
-	request.Params = params
-
-	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
-		return sh.ssi.DeleteScope(ctx.Request().Context(), request.(DeleteScopeRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "DeleteScope")
-	}
-
-	response, err := handler(ctx, request)
-
-	if err != nil {
-		return err
-	} else if validResponse, ok := response.(DeleteScopeResponseObject); ok {
-		return validResponse.VisitDeleteScopeResponse(ctx.Response())
-	} else if response != nil {
-		return fmt.Errorf("unexpected response type: %T", response)
-	}
-	return nil
-}
-
-// CreateScope operation middleware
-func (sh *strictHandler) CreateScope(ctx echo.Context) error {
-	var request CreateScopeRequestObject
-
-	var body CreateScopeJSONRequestBody
-	if err := ctx.Bind(&body); err != nil {
-		return err
-	}
-	request.Body = &body
-
-	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
-		return sh.ssi.CreateScope(ctx.Request().Context(), request.(CreateScopeRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "CreateScope")
-	}
-
-	response, err := handler(ctx, request)
-
-	if err != nil {
-		return err
-	} else if validResponse, ok := response.(CreateScopeResponseObject); ok {
-		return validResponse.VisitCreateScopeResponse(ctx.Response())
+	} else if validResponse, ok := response.(UpdateClientAPIProductsResponseObject); ok {
+		return validResponse.VisitUpdateClientAPIProductsResponse(ctx.Response())
 	} else if response != nil {
 		return fmt.Errorf("unexpected response type: %T", response)
 	}

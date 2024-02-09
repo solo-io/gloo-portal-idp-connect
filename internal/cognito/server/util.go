@@ -14,13 +14,17 @@ func newPortalError(code int, msg, reason string) portalv1.Error {
 	}
 }
 
+func newPortal400Error(reason string) portalv1.Error {
+	return newPortalError(400, "Bad Request", reason)
+}
+
 func newPortal500Error(reason string) portalv1.Error {
 	return newPortalError(500, "Internal Server Error", reason)
 }
 
-func apiScopesToCognitoScopeType(apiScope portalv1.Scope) types.ResourceServerScopeType {
+func apiProductToCognitoScopeType(apiProduct portalv1.ApiProduct) types.ResourceServerScopeType {
 	return types.ResourceServerScopeType{
-		ScopeDescription: &apiScope.Description,
-		ScopeName:        &apiScope.Value,
+		ScopeDescription: apiProduct.Description,
+		ScopeName:        &apiProduct.Name,
 	}
 }

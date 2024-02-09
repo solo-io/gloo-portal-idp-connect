@@ -7,10 +7,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.19.1
 	github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.28.0
 	github.com/aws/smithy-go v1.19.0
-	github.com/getkin/kin-openapi v0.122.0
+	github.com/getkin/kin-openapi v0.107.0
 	github.com/golang/mock v1.6.0
 	github.com/labstack/echo/v4 v4.11.4
-	github.com/oapi-codegen/echo-middleware v1.0.1
 	github.com/oapi-codegen/runtime v1.1.1
 	github.com/onsi/ginkgo/v2 v2.15.0
 	github.com/onsi/gomega v1.31.1

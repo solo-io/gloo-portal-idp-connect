@@ -17,8 +17,10 @@ require (
 	github.com/rotisserie/eris v0.5.4
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
-	k8s.io/client-go v0.29.1
-	sigs.k8s.io/controller-runtime v0.17.0
+	k8s.io/api v0.28.3
+	k8s.io/apimachinery v0.28.3
+	k8s.io/client-go v0.28.3
+	sigs.k8s.io/controller-runtime v0.16.4
 )
 
 require (
@@ -80,8 +82,6 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.29.1 // indirect
-	k8s.io/apimachinery v0.29.1 // indirect
 	k8s.io/klog/v2 v2.110.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00 // indirect
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b // indirect

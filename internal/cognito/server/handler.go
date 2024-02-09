@@ -132,11 +132,19 @@ func (s *StrictServerHandler) UpdateClientAPIProducts(
 		cognitoScopes = append(cognitoScopes, fmt.Sprintf("%s/%s", s.resourceServer, apiProduct))
 	}
 
-	_, err := s.cognitoClient.UpdateUserPoolClient(ctx, &cognito.UpdateUserPoolClientInput{
+	clientInput := &cognito.UpdateUserPoolClientInput{
 		UserPoolId:         &s.userPool,
 		ClientId:           &request.Id,
 		AllowedOAuthScopes: cognitoScopes,
-	})
+	}
+	if len(cognitoScopes) != 0 {
+		clientInput.AllowedOAuthFlowsUserPoolClient = true
+		clientInput.AllowedOAuthFlows = []types.OAuthFlowType{
+			types.OAuthFlowTypeClientCredentials,
+		}
+	}
+
+	_, err := s.cognitoClient.UpdateUserPoolClient(ctx, clientInput)
 
 	if err != nil {
 		switch cognitoErr := unwrapCognitoError(err); cognitoErr.Code {

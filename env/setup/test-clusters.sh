@@ -16,7 +16,7 @@ Options:
   -c  --connector                 The connector to use for the installation. Current options are: 'cognito'. Default is 'cognito'.
       --cognito-user-pool         The user pool id to use for the installation. Default is 'us-west-2_CngONp9kI'.
       --idp-connect-version       The IDP Connect release version for the installation.
-      --build-local               Build the IDP Connect locally. Default is false.
+      --skip-docker-build         Do not build the IDP Connect locally.
 Flags:
       --help     Show command usage.
 "
@@ -28,7 +28,7 @@ CONNECTOR="cognito"
 USER_POOL_ID=${USER_POOL_ID:-"us-west-2_CngONp9kI"}
 CLUSTER_NAME="kind"
 TAGGED_VERSION=""
-BUILD_LOCAL="false"
+SKIP_DOCKER_BUILD="true"
 
 # Parse first program argument.
 case "$1" in
@@ -76,8 +76,8 @@ while [ $# -gt 0 ]; do
     shift
     shift
     ;;
-  --build-local)
-    BUILD_LOCAL="$2"
+  --skip-docker-build)
+    SKIP_DOCKER_BUILD="$2"
     shift
     shift
     ;;
@@ -94,7 +94,7 @@ source "$cur_dir/setup-funcs.sh"
 if [ "$OPERATION_TYPE" == "setup" ]; then
   create_cluster "${CLUSTER_NAME}"
 
-  if [ "$BUILD_LOCAL" != "true" ]; then
+  if [ "${SKIP_DOCKER_BUILD}" != "true" ]; then
     retry make kind-load
   fi
 

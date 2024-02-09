@@ -56,7 +56,7 @@ EOF
   fi
 
   # Install the IDP connector
-  helm upgrade --install idp-connect ./helm \
+  helm upgrade --install idp-connect ${helm_installation} \
     --values "$values_file" \
     --wait --timeout 30s
 

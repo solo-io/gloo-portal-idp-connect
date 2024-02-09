@@ -124,7 +124,7 @@ run-e2e-tests: setup-test-clusters
 
 .PHONY: setup-test-clusters
 setup-test-clusters: package-helm
-	./env/setup/test-clusters.sh setup --idp-connect-release $(TAGGED_VERSION) --build-local $(RELEASE)
+	./env/setup/test-clusters.sh setup --idp-connect-version $(TAGGED_VERSION) --skip-docker-build $(RELEASE)
 
 .PHONY: cleanup-test-clusters
 cleanup-test-clusters:

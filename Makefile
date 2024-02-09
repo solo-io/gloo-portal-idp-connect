@@ -90,7 +90,7 @@ docker-build:
 	docker build . -t $(DOCKER_IMAGE)
 
 .PHONY: docker-release
-docker-release: docker-build
+docker-release:
 ifeq ($(RELEASE),"true")
 	VERSION_MINOR=${VERSION_MINOR} REPO_DIR=${REPO_DIR} scripts/release-docker.sh
 	docker buildx create --use --name multi-builder --platform linux/amd64,linux/arm64 || true
@@ -124,7 +124,7 @@ run-e2e-tests: setup-test-clusters
 
 .PHONY: setup-test-clusters
 setup-test-clusters: package-helm
-	./env/setup/test-clusters.sh setup
+	./env/setup/test-clusters.sh setup --idp-connect-release $(TAGGED_VERSION) --build-local $(RELEASE)
 
 .PHONY: cleanup-test-clusters
 cleanup-test-clusters:

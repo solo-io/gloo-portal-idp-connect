@@ -15,6 +15,7 @@ delete_cluster() {
 install_idp_connect() {
   local connector=$1
   local cognito_user_pool=$2
+  local release_version=$3
 
   # Check connector equals 'cognito'
   if [ "$connector" != "cognito" ]; then
@@ -47,6 +48,12 @@ cognito:
     secretAccessKey: ${AWS_SECRET_ACCESS_KEY}
     sessionToken: ${AWS_SESSION_TOKEN}
 EOF
+
+  local helm_installation="./helm"
+  if [ -n "${release_version}" ]; then
+    helm repo add idp-connect https://storage.googleapis.com/gloo-mesh-enterprise/gloo-portal-idp-connect
+    helm_installation="idp-connect/gloo-portal-idp-connect --version ${release_version}"
+  fi
 
   # Install the IDP connector
   helm upgrade --install idp-connect ./helm \

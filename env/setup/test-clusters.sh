@@ -13,8 +13,10 @@ Sub-commands:
   cleanup   Delete the cluster.
 
 Options:
-  -c  --connector               The connector to use for the installation. Current options are: 'cognito'. Default is 'cognito'.
-      --cognito-user-pool       The user pool id to use for the installation. Default is 'us-west-2_CngONp9kI'.
+  -c  --connector                 The connector to use for the installation. Current options are: 'cognito'. Default is 'cognito'.
+      --cognito-user-pool         The user pool id to use for the installation. Default is 'us-west-2_CngONp9kI'.
+      --idp-connect-version       The IDP Connect release version for the installation.
+      --build-local               Build the IDP Connect locally. Default is false.
 Flags:
       --help     Show command usage.
 "
@@ -25,7 +27,8 @@ OPERATION_TYPE=""
 CONNECTOR="cognito"
 USER_POOL_ID=${USER_POOL_ID:-"us-west-2_CngONp9kI"}
 CLUSTER_NAME="kind"
-
+TAGGED_VERSION=""
+BUILD_LOCAL="false"
 
 # Parse first program argument.
 case "$1" in
@@ -68,6 +71,16 @@ while [ $# -gt 0 ]; do
     shift
     shift
     ;;
+  --idp-connect-version)
+    TAGGED_VERSION="$2"
+    shift
+    shift
+    ;;
+  --build-local)
+    BUILD_LOCAL="$2"
+    shift
+    shift
+    ;;
   *)
     printf "Unknown option: %s \n\n%s\n" "$key" "$USAGE_MSG"
     exit 1
@@ -81,9 +94,11 @@ source "$cur_dir/setup-funcs.sh"
 if [ "$OPERATION_TYPE" == "setup" ]; then
   create_cluster "${CLUSTER_NAME}"
 
-  retry make kind-load
+  if [ "$BUILD_LOCAL" != "true" ]; then
+    retry make kind-load
+  fi
 
-  install_idp_connect "${CONNECTOR}" "${USER_POOL_ID}"
+  install_idp_connect "${CONNECTOR}" "${USER_POOL_ID}" "${TAGGED_VERSION}"
 
   # Apply apps
   kubectl apply -f "$cur_dir/apps"

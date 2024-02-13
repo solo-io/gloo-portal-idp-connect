@@ -76,7 +76,7 @@ while [ $# -gt 0 ]; do
     shift
     shift
     ;;
-  --skip-docker-build)
+  --use-remote)
     USE_REMOTE="$2"
     shift
     shift

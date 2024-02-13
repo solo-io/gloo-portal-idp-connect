@@ -28,20 +28,20 @@ type DeleteAPIProductParams struct {
 	Passthrough *string `form:"passthrough,omitempty" json:"passthrough,omitempty"`
 }
 
-// CreateClientJSONBody defines parameters for CreateClient.
-type CreateClientJSONBody struct {
-	ClientName  string                  `json:"clientName"`
+// CreateOAuthApplicationJSONBody defines parameters for CreateOAuthApplication.
+type CreateOAuthApplicationJSONBody struct {
+	Name        string                  `json:"name"`
 	Passthrough *map[string]interface{} `json:"passthrough,omitempty"`
 }
 
-// DeleteClientParams defines parameters for DeleteClient.
-type DeleteClientParams struct {
+// DeleteApplicationParams defines parameters for DeleteApplication.
+type DeleteApplicationParams struct {
 	// Passthrough Optionally include passthrough data as a json string.
 	Passthrough *string `form:"passthrough,omitempty" json:"passthrough,omitempty"`
 }
 
-// UpdateClientAPIProductsJSONBody defines parameters for UpdateClientAPIProducts.
-type UpdateClientAPIProductsJSONBody struct {
+// UpdateAppAPIProductsJSONBody defines parameters for UpdateAppAPIProducts.
+type UpdateAppAPIProductsJSONBody struct {
 	ApiProducts []string                `json:"apiProducts"`
 	Passthrough *map[string]interface{} `json:"passthrough,omitempty"`
 }
@@ -49,8 +49,8 @@ type UpdateClientAPIProductsJSONBody struct {
 // CreateAPIProductJSONRequestBody defines body for CreateAPIProduct for application/json ContentType.
 type CreateAPIProductJSONRequestBody CreateAPIProductJSONBody
 
-// CreateClientJSONRequestBody defines body for CreateClient for application/json ContentType.
-type CreateClientJSONRequestBody CreateClientJSONBody
+// CreateOAuthApplicationJSONRequestBody defines body for CreateOAuthApplication for application/json ContentType.
+type CreateOAuthApplicationJSONRequestBody CreateOAuthApplicationJSONBody
 
-// UpdateClientAPIProductsJSONRequestBody defines body for UpdateClientAPIProducts for application/json ContentType.
-type UpdateClientAPIProductsJSONRequestBody UpdateClientAPIProductsJSONBody
+// UpdateAppAPIProductsJSONRequestBody defines body for UpdateAppAPIProducts for application/json ContentType.
+type UpdateAppAPIProductsJSONRequestBody UpdateAppAPIProductsJSONBody

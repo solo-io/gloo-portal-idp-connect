@@ -1,26 +1,26 @@
 info:
   title: 'Gloo Platform Portal IDP Connect API'
   version: 1.0.0
-  description: Before you begin, set up Gloo Platform Portal with your OpenID Connect (OIDC) provider. Then with this IDP Connect API, you can manage the clients and API Products in your OIDC provider that get associated with your Portal apps. For more information, see the [Gloo Platform Portal docs](https://docs.solo.io/gloo-portal/latest/).
+  description: Before you begin, set up Gloo Platform Portal with your OpenID Connect (OIDC) provider. Then with this IDP Connect API, you can manage the clients and API Products in your OIDC provider that get associated with your Portal applications. For more information, see the [Gloo Platform Portal docs](https://docs.solo.io/gloo-portal/latest/).
 openapi: 3.0.0
 servers:
   - url: https://api.gloo-platform-portal.com/v1
 paths:
-  /clients:
+  /applications/oauth2:
     post:
-      description: Creates a client in the Open Id Connect Provider that the IDP Connect implementation integrates with. Note that the `clientSecret` is never stored in the database and is shown to the user only once. Keep this secret to make future requests to the API products in the Portal. Identity token is required to validate that the user is associated with the given client.
-      operationId: CreateClient
+      description: Creates an application of type oauth2. This is intended to be integrated with an Open Id Connect Provider that the IDP Connect implementation integrates with. Note that the `clientSecret` is never stored in the database and is shown to the user only once. Keep this secret to make future requests to the API products in the Portal.
+      operationId: CreateOAuthApplication
       requestBody:
-        description: (Required) clientName for creating name of the client. `passthrough` is directly passed to the IDP Connect implementation that will create the client in the Open Id Connect Provider.
+        description: (Required) name for creating name of the client. `passthrough` is directly passed to the IDP Connect implementation that will create the client in the Open Id Connect Provider.
         required: true
         content:
           application/json:
             schema:
               type: object
               required:
-                - clientName
+                - name
               properties:
-                clientName:
+                name:
                   type: string
                   example: "example-user-pool-developer-1"
                 passthrough:
@@ -64,18 +64,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-      summary: Creates a client in the OpenID Connect Provider.
+      summary: Creates an application of type oauth2.
       tags:
-        - Clients
-  /clients/{id}:
+        - Applications
+  /applications/{id}:
     delete:
-      description: Delete client.
-      operationId: DeleteClient
+      description: Delete application.
+      operationId: DeleteApplication
       parameters:
         - in: path
           name: "id"
           required: true
-          description: (Required) ID for client to delete.
+          description: (Required) ID for application to delete.
           schema:
             type: string
         - in: query
@@ -85,35 +85,35 @@ paths:
             type: string
       responses:
         '204':
-          description: Successfully deleted client.
+          description: Successfully deleted application.
         '404':
-          description: Client not found.
+          description: Application not found.
           content:
             application/json:
               schema:
                   $ref: '#/components/schemas/Error'
         '500':
-          description: Unexpected error deleting client.
+          description: Unexpected error deleting application.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-      summary: Deletes a client in the OpenID Connect Provider.
+      summary: Deletes an application in the OpenID Connect Provider.
       tags:
-        - Clients
-  /clients/{id}/api-products:
+        - Applications
+  /applications/{id}/api-products:
     put:
-      description: Update Client API Products.
-      operationId: UpdateClientAPIProducts
+      description: Update application's API Products.
+      operationId: UpdateAppAPIProducts
       parameters:
         - in: path
           name: "id"
           required: true
-          description: (Required) Client ID to add API Product to.
+          description: (Required) Application ID to add API Product to.
           schema:
             type: string
       requestBody:
-        description: Add API Product for a specific client.
+        description: Add API Product for a specific application.
         required: true
         content:
           application/json:
@@ -134,7 +134,7 @@ paths:
                   }
       responses:
         '204':
-          description: Successfully added API Product to client.
+          description: Successfully added API Product to application.
         '400':
           description: Invalid input.
           content:
@@ -142,26 +142,26 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '404':
-          description: Client not found.
+          description: Application not found.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '500':
-          description: Unexpected error adding client API Products.
+          description: Unexpected error adding application API Products.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-      summary: Adds API Product to a client in the OpenID Connect Provider
+      summary: Adds API Product to a application in the OpenID Connect Provider.
       tags:
-        - Clients
+        - Applications
   /api-products:
     post:
       description: Creates API Product in the Open Id Connect Provider.
       operationId: CreateAPIProduct
       requestBody:
-        description: Create API Product for associated with your Open Id Connect clients.
+        description: Create API Product for associated with your applications.
         required: true
         content:
           application/json:
@@ -198,16 +198,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-      summary: Creates API Product in the OpenID Connect Provider. Then, you can add this API Product to the client ID for your Portal apps with the `PUT /clients/{id}/api-products` API request
+      summary: Creates API Product in the OpenID Connect Provider. Then, you can add this API Product to the application for your Portal applications with the `PUT /applications/{id}/api-products` API request.
       tags:
         - API Products
-  /api-products/{apiProduct}:
+  /api-products/{name}:
     delete:
       description: Deletes API Product in the Open Id Connect Provider for a given unique identifier.
       operationId: DeleteAPIProduct
       parameters:
         - in: path
-          name: "apiProduct"
+          name: "name"
           required: true
           description: (Required) Name of the API Product we'd like to delete.
           schema:

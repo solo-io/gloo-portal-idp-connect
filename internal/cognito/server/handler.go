@@ -68,11 +68,11 @@ func NewStrictServerHandler(opts *Options, cognitoClient CognitoClient) *StrictS
 	}
 }
 
-// DeleteClient deletes a client in Cognito
-func (s *StrictServerHandler) DeleteClient(
+// DeleteApplication deletes an application by ID.
+func (s *StrictServerHandler) DeleteApplication(
 	ctx context.Context,
-	request portalv1.DeleteClientRequestObject,
-) (portalv1.DeleteClientResponseObject, error) {
+	request portalv1.DeleteApplicationRequestObject,
+) (portalv1.DeleteApplicationResponseObject, error) {
 	_, err := s.cognitoClient.DeleteUserPoolClient(ctx, &cognito.DeleteUserPoolClientInput{
 		UserPoolId: &s.userPool,
 		ClientId:   aws.String(request.Id),
@@ -82,49 +82,49 @@ func (s *StrictServerHandler) DeleteClient(
 		if err != nil {
 			switch cognitoErr := unwrapCognitoError(err); cognitoErr.Code {
 			case 404:
-				return portalv1.DeleteClient404JSONResponse(cognitoErr), nil
+				return portalv1.DeleteApplication404JSONResponse(cognitoErr), nil
 			default:
-				return portalv1.DeleteClient500JSONResponse(cognitoErr), nil
+				return portalv1.DeleteApplication500JSONResponse(cognitoErr), nil
 			}
 		}
 	}
 
-	return portalv1.DeleteClient204Response{}, nil
+	return portalv1.DeleteApplication204Response{}, nil
 }
 
-// CreateClient creates a client in Cognito
-func (s *StrictServerHandler) CreateClient(
+// CreateOAuthApplication creates a client in Cognito
+func (s *StrictServerHandler) CreateOAuthApplication(
 	ctx context.Context,
-	request portalv1.CreateClientRequestObject,
-) (portalv1.CreateClientResponseObject, error) {
-	if request.Body == nil || len(request.Body.ClientName) == 0 {
-		return portalv1.CreateClient400JSONResponse(newPortal400Error("client name is required")), nil
+	request portalv1.CreateOAuthApplicationRequestObject,
+) (portalv1.CreateOAuthApplicationResponseObject, error) {
+	if request.Body == nil || len(request.Body.Name) == 0 {
+		return portalv1.CreateOAuthApplication400JSONResponse(newPortal400Error("client name is required")), nil
 	}
 
 	out, err := s.cognitoClient.CreateUserPoolClient(ctx, &cognito.CreateUserPoolClientInput{
 		UserPoolId:     &s.userPool,
-		ClientName:     aws.String(request.Body.ClientName),
+		ClientName:     aws.String(request.Body.Name),
 		GenerateSecret: true,
 	})
 
 	if err != nil {
-		return portalv1.CreateClient500JSONResponse(unwrapCognitoError(err)), nil
+		return portalv1.CreateOAuthApplication500JSONResponse(unwrapCognitoError(err)), nil
 	}
 
-	return portalv1.CreateClient201JSONResponse{
+	return portalv1.CreateOAuthApplication201JSONResponse{
 		ClientId:     out.UserPoolClient.ClientId,
 		ClientSecret: out.UserPoolClient.ClientSecret,
-		ClientName:   aws.String(request.Body.ClientName),
+		ClientName:   aws.String(request.Body.Name),
 	}, nil
 }
 
-// UpdateClientAPIProducts updates scopes for a client in Cognito.
-func (s *StrictServerHandler) UpdateClientAPIProducts(
+// UpdateAppAPIProducts updates scopes for a client in Cognito.
+func (s *StrictServerHandler) UpdateAppAPIProducts(
 	ctx context.Context,
-	request portalv1.UpdateClientAPIProductsRequestObject,
-) (portalv1.UpdateClientAPIProductsResponseObject, error) {
+	request portalv1.UpdateAppAPIProductsRequestObject,
+) (portalv1.UpdateAppAPIProductsResponseObject, error) {
 	if request.Body == nil {
-		return portalv1.UpdateClientAPIProducts400JSONResponse(newPortal400Error("request body is required")), nil
+		return portalv1.UpdateAppAPIProducts400JSONResponse(newPortal400Error("request body is required")), nil
 	}
 
 	var cognitoScopes []string
@@ -149,13 +149,13 @@ func (s *StrictServerHandler) UpdateClientAPIProducts(
 	if err != nil {
 		switch cognitoErr := unwrapCognitoError(err); cognitoErr.Code {
 		case 404:
-			return portalv1.UpdateClientAPIProducts404JSONResponse(cognitoErr), nil
+			return portalv1.UpdateAppAPIProducts404JSONResponse(cognitoErr), nil
 		default:
-			return portalv1.UpdateClientAPIProducts500JSONResponse(cognitoErr), nil
+			return portalv1.UpdateAppAPIProducts500JSONResponse(cognitoErr), nil
 		}
 	}
 
-	return portalv1.UpdateClientAPIProducts204Response{}, nil
+	return portalv1.UpdateAppAPIProducts204Response{}, nil
 }
 
 // DeleteAPIProduct deletes scopes in Cognito
@@ -183,7 +183,7 @@ func (s *StrictServerHandler) DeleteAPIProduct(
 			continue
 		}
 
-		if *scope.ScopeName == request.ApiProduct {
+		if *scope.ScopeName == request.Name {
 			scopeExists = true
 			continue
 		}

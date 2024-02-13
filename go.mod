@@ -7,9 +7,10 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.19.1
 	github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.28.0
 	github.com/aws/smithy-go v1.19.0
-	github.com/getkin/kin-openapi v0.107.0
+	github.com/getkin/kin-openapi v0.118.0
 	github.com/golang/mock v1.6.0
 	github.com/labstack/echo/v4 v4.11.4
+	github.com/oapi-codegen/echo-middleware v1.0.1
 	github.com/oapi-codegen/runtime v1.1.1
 	github.com/onsi/ginkgo/v2 v2.15.0
 	github.com/onsi/gomega v1.31.1
@@ -63,7 +64,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/perimeterx/marshmallow v1.1.5 // indirect
+	github.com/perimeterx/marshmallow v1.1.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect

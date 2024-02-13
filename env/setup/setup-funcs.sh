@@ -16,6 +16,9 @@ install_idp_connect() {
   local connector=$1
   local cognito_user_pool=$2
   local release_version=$3
+  local use_remote=$4
+  
+  set -x
 
   # Check connector equals 'cognito'
   if [ "$connector" != "cognito" ]; then
@@ -50,7 +53,7 @@ cognito:
 EOF
 
   local helm_installation="./helm"
-  if [ -n "${release_version}" ]; then
+  if [ -n "${release_version}" ] && [ "${use_remote}" = "true" ] ; then
     helm repo add idp-connect https://storage.googleapis.com/gloo-mesh-enterprise/gloo-portal-idp-connect
     helm_installation="idp-connect/gloo-portal-idp-connect --version ${release_version}"
   fi

@@ -16,7 +16,7 @@ Options:
   -c  --connector                 The connector to use for the installation. Current options are: 'cognito'. Default is 'cognito'.
       --cognito-user-pool         The user pool id to use for the installation. Default is 'us-west-2_CngONp9kI'.
       --idp-connect-version       The IDP Connect release version for the installation.
-      --skip-docker-build         Do not build the IDP Connect locally.
+      --use-remote                Use helm chart and docker images pushed to cloud.
 Flags:
       --help     Show command usage.
 "
@@ -28,7 +28,7 @@ CONNECTOR="cognito"
 USER_POOL_ID=${USER_POOL_ID:-"us-west-2_CngONp9kI"}
 CLUSTER_NAME="kind"
 TAGGED_VERSION=""
-SKIP_DOCKER_BUILD="true"
+USE_REMOTE="true"
 
 # Parse first program argument.
 case "$1" in
@@ -77,7 +77,7 @@ while [ $# -gt 0 ]; do
     shift
     ;;
   --skip-docker-build)
-    SKIP_DOCKER_BUILD="$2"
+    USE_REMOTE="$2"
     shift
     shift
     ;;
@@ -94,11 +94,11 @@ source "$cur_dir/setup-funcs.sh"
 if [ "$OPERATION_TYPE" == "setup" ]; then
   create_cluster "${CLUSTER_NAME}"
 
-  if [ "${SKIP_DOCKER_BUILD}" != "true" ]; then
+  if [ "${USE_REMOTE}" != "true" ]; then
     retry make kind-load
   fi
 
-  install_idp_connect "${CONNECTOR}" "${USER_POOL_ID}" "${TAGGED_VERSION}"
+  install_idp_connect "${CONNECTOR}" "${USER_POOL_ID}" "${TAGGED_VERSION}" "${USE_REMOTE}"
 
   # Apply apps
   kubectl apply -f "$cur_dir/apps"

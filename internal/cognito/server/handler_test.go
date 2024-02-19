@@ -101,6 +101,16 @@ var _ = Describe("Server", func() {
 				Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateClient400JSONResponse{}))
 			})
 
+			It("returns error code on empty client name", func() {
+				resp, err := s.CreateClient(ctx, portalv1.CreateClientRequestObject{
+					Body: &portalv1.CreateClientJSONRequestBody{
+						ClientName: "",
+					},
+				})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateClient400JSONResponse{}))
+			})
+
 			It("returns not found code on deletion", func() {
 				resp, err := s.DeleteClient(ctx, portalv1.DeleteClientRequestObject{
 					Id: "test-client",

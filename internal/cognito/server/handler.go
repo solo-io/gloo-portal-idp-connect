@@ -97,8 +97,8 @@ func (s *StrictServerHandler) CreateClient(
 	ctx context.Context,
 	request portalv1.CreateClientRequestObject,
 ) (portalv1.CreateClientResponseObject, error) {
-	if request.Body == nil {
-		return portalv1.CreateClient400JSONResponse(newPortal400Error("request body is required")), nil
+	if request.Body == nil || len(request.Body.ClientName) == 0 {
+		return portalv1.CreateClient400JSONResponse(newPortal400Error("client name is required")), nil
 	}
 
 	out, err := s.cognitoClient.CreateUserPoolClient(ctx, &cognito.CreateUserPoolClientInput{

@@ -6,25 +6,106 @@ openapi: 3.0.0
 servers:
   - url: https://api.gloo-platform-portal.com/v1
 paths:
-  /applications/oauth2:
+  /applications:
     post:
-      description: Creates a client in the Open Id Connect Provider that the IDP Connect implementation integrates with. Note that the `clientSecret` is never stored in the database and is shown to the user only once. Keep this secret to make future requests to the API products in the Portal. Identity token is required to validate that the user is associated with the given client.
-      operationId: CreateAppOauthClient
+      description: Creates an application.
+      operationId: CreateApplication
       requestBody:
-        description: (Required) clientName for creating name of the client. `passthrough` is directly passed to the IDP Connect implementation that will create the client in the Open Id Connect Provider.
+        description: (Required) Name for creating name of the application. `passthrough` can be utilized to pass any additional context that may be needed in application creation.
         required: true
         content:
           application/json:
             schema:
               type: object
               required:
-                - clientName
+                - name
               properties:
-                clientName:
+                name:
                   type: string
-                  example: "example-user-pool-developer-1"
+                  example: "example-application"
                 passthrough:
                   type: object
+                  example: {
+                    UserPoolId: "example-user-pool"
+                  }
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  passthroughResponse:
+                    type: object
+                    example: {
+                      UserPoolClient: {
+                        AllowedOAuthScopes: [
+                          "email",
+                          "openid"
+                        ],
+                      }
+                    }
+          description: Successfully created application.
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Unexpected error creating application.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      summary: Creates an application.
+      tags:
+        - Applications
+  /applications/{name}:
+    delete:
+      description: Delete application.
+      operationId: DeleteApplication
+      parameters:
+        - in: path
+          name: "name"
+          required: true
+          description: (Required) ID for application to delete.
+          schema:
+            type: string
+        - in: query
+          name: "passthrough"
+          description: Optionally include passthrough data as a json string.
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Successfully deleted application.
+        '404':
+          description: Application not found.
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/Error'
+        '500':
+          description: Unexpected error deleting application.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      summary: Deletes an application.
+      tags:
+        - Applications
+  /applications/{name}/oauth2:
+    post:
+      description: Registers an application as an Oauth2 client in the Open Id Connect Provider.
+      operationId: CreateAppOauthClient
+      parameters:
+        - in: path
+          name: "name"
+          required: true
+          description: (Required) Name for application to register as Oauth2 client.
+          schema:
+            type: string
       responses:
         '201':
           content:
@@ -52,12 +133,6 @@ paths:
                       }
                     }
           description: Successfully created client.
-        '400':
-          description: Invalid input.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
         '500':
           description: Unexpected error creating client.
           content:
@@ -67,47 +142,13 @@ paths:
       summary: Creates a client in the OpenID Connect Provider.
       tags:
         - Applications
-  /applications/{id}:
-    delete:
-      description: Delete application.
-      operationId: DeleteApplication
-      parameters:
-        - in: path
-          name: "id"
-          required: true
-          description: (Required) ID for application to delete.
-          schema:
-            type: string
-        - in: query
-          name: "passthrough"
-          description: Optionally include passthrough data as a json string.
-          schema:
-            type: string
-      responses:
-        '204':
-          description: Successfully deleted application.
-        '404':
-          description: Application not found.
-          content:
-            application/json:
-              schema:
-                  $ref: '#/components/schemas/Error'
-        '500':
-          description: Unexpected error deleting application.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      summary: Deletes an application in the OpenID Connect Provider.
-      tags:
-        - Applications
-  /applications/{id}/api-products:
+  /applications/{name}/api-products:
     put:
       description: Update application's API Products.
       operationId: UpdateAppAPIProducts
       parameters:
         - in: path
-          name: "id"
+          name: "name"
           required: true
           description: (Required) Application ID to add API Product to.
           schema:
@@ -153,7 +194,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-      summary: Adds API Product to a application in the OpenID Connect Provider
+      summary: Adds API Product to an application.
       tags:
         - Applications
   /api-products:
@@ -161,7 +202,7 @@ paths:
       description: Creates API Product in the Open Id Connect Provider.
       operationId: CreateAPIProduct
       requestBody:
-        description: Create API Product for associated with your applications.
+        description: Create API Product for association with your applications.
         required: true
         content:
           application/json:

@@ -1,0 +1,19 @@
+.bin/
+.env
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+*.test
+
+get_helm.sh
+
+# Dependency directories (remove the comment below to include it)
+vendor/
+.idea/
+.vscode/
+
+# ignore generated helm files
+_helm_sync_dir/
+
+helm/Chart.yaml
+helm/values.yaml

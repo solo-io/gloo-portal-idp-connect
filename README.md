@@ -13,3 +13,7 @@ Here is a list of Identity Providers that we currently support:
 
 IDP Connect provides a straightforward and easy-to-setup way of configuring credentials for the applications in your system; however,
  we expect that the needs of your system are and will evolve beyond the scope of this simple implementation. The SPI we provide provides a hook on top of which you can build a customizable system to service any number of more advanced use cases.
+
+TODO: Add information for devs
+* Install tools
+* (Potential) Allow for AWS IAM Roles for service accounts as cognito auth method.

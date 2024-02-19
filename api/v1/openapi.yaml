@@ -1,0 +1,263 @@
+info:
+  title: 'Gloo Platform Portal IDP Connect API'
+  version: 1.0.0
+  description: Before you begin, set up Gloo Platform Portal with your OpenID Connect (OIDC) provider. Then with this IDP Connect API, you can manage the clients and API Products in your OIDC provider that get associated with your Portal apps. For more information, see the [Gloo Platform Portal docs](https://docs.solo.io/gloo-portal/latest/).
+openapi: 3.0.0
+servers:
+  - url: https://api.gloo-platform-portal.com/v1
+paths:
+  /clients:
+    post:
+      description: Creates a client in the Open Id Connect Provider that the IDP Connect implementation integrates with. Note that the `clientSecret` is never stored in the database and is shown to the user only once. Keep this secret to make future requests to the API products in the Portal. Identity token is required to validate that the user is associated with the given client.
+      operationId: CreateClient
+      requestBody:
+        description: (Required) clientName for creating name of the client. `passthrough` is directly passed to the IDP Connect implementation that will create the client in the Open Id Connect Provider.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - clientName
+              properties:
+                clientName:
+                  type: string
+                  example: "example-user-pool-developer-1"
+                passthrough:
+                  type: object
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  clientId:
+                    type: string
+                    example: a0897e6d0ea94f589c38278bca4e9342
+                  clientSecret:
+                    type: string
+                    example: c94dbd582d594e8aa04934f9c7ef0f52
+                  clientName:
+                    type: string
+                    example: "example-user-pool-developer-1"
+                  passthroughResponse:
+                    type: object
+                    example: {
+                      UserPoolClient: {
+                        AllowedOAuthScopes: [
+                          "email",
+                          "openid"
+                        ],
+                      }
+                    }
+          description: Successfully created client.
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Unexpected error creating client.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      summary: Creates a client in the OpenID Connect Provider.
+      tags:
+        - Clients
+  /clients/{id}:
+    delete:
+      description: Delete client.
+      operationId: DeleteClient
+      parameters:
+        - in: path
+          name: "id"
+          required: true
+          description: (Required) ID for client to delete.
+          schema:
+            type: string
+        - in: query
+          name: "passthrough"
+          description: Optionally include passthrough data as a json string.
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Successfully deleted client.
+        '404':
+          description: Client not found.
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/Error'
+        '500':
+          description: Unexpected error deleting client.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      summary: Deletes a client in the OpenID Connect Provider.
+      tags:
+        - Clients
+  /clients/{id}/api-products:
+    put:
+      description: Update Client API Products.
+      operationId: UpdateClientAPIProducts
+      parameters:
+        - in: path
+          name: "id"
+          required: true
+          description: (Required) Client ID to add API Product to.
+          schema:
+            type: string
+      requestBody:
+        description: Add API Product for a specific client.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - apiProducts
+              properties:
+                apiProducts:
+                  type: array
+                  items:
+                      type: string
+                      example: "example-api-product"
+                passthrough:
+                  type: object
+                  example: {
+                    UserPoolId: "example-user-pool"
+                  }
+      responses:
+        '204':
+          description: Successfully added API Product to client.
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Client not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Unexpected error adding client API Products.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      summary: Adds API Product to a client in the OpenID Connect Provider
+      tags:
+        - Clients
+  /api-products:
+    post:
+      description: Creates API Product in the Open Id Connect Provider.
+      operationId: CreateAPIProduct
+      requestBody:
+        description: Create API Product for associated with your Open Id Connect clients.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - apiProduct
+              properties:
+                apiProduct:
+                  $ref: '#/components/schemas/ApiProduct'
+                passthrough:
+                  type: object
+                  example: {
+                    UserPoolId: "example-user-pool"
+                  }
+      responses:
+        '201':
+          description: Successfully created API Product.
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: API Product already exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Unexpected error creating API Product.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      summary: Creates API Product in the OpenID Connect Provider. Then, you can add this API Product to the client ID for your Portal apps with the `PUT /clients/{id}/api-products` API request
+      tags:
+        - API Products
+  /api-products/{apiProduct}:
+    delete:
+      description: Deletes API Product in the Open Id Connect Provider for a given unique identifier.
+      operationId: DeleteAPIProduct
+      parameters:
+        - in: path
+          name: "apiProduct"
+          required: true
+          description: (Required) Name of the API Product we'd like to delete.
+          schema:
+            type: string
+        - in: query
+          name: "passthrough"
+          description: Optionally include passthrough data.
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Successfully deleted API Product.
+        '404':
+          description: API Product not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Unexpected error deleting API Product.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      summary: Deletes API Product in the OpenID Connect Provider.
+      tags:
+        - API Products
+components:
+  schemas:
+    ApiProduct:
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: "example-api-product"
+        description:
+          type: string
+          example: "example API Product description"
+    Error:
+      required:
+        - code
+        - message
+        - reason
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+          example: "Status Code Message"
+        reason:
+          type: string
+          example: "Error reason"

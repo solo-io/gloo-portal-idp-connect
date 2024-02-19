@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    {{- include "gloo-portal-idp-connect.labels" . | nindent 4 }}
+    service: {{ .Values.fullname }}
+  annotations:
+    app.kubernetes.io/name: {{ .Values.fullname }}
+  name: idp-connect
+  namespace: {{ $.Release.Namespace }}
+spec:
+  selector:
+    {{- include "gloo-portal-idp-connect.labels" . | nindent 4 }}
+  type: ClusterIP
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: 8080

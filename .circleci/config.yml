@@ -1,0 +1,39 @@
+version: 2.1
+
+# this allows you to use CircleCI's dynamic configuration feature
+setup: true
+
+# the continuation orb is required in order to use dynamic configuration
+# See circleci docs (https://circleci.com/developer/orbs/orb/circleci/continuation) and the
+# continuation example (https://circleci.com/docs/2.0/configuration-cookbook/?section=examples-and-guides#a-basic-example)
+orbs:
+  continuation: circleci/continuation@0.1.2
+
+workflows:
+  setup:
+    jobs:
+      - continuation/continue:
+          configuration_path: ".circleci/continue_config.yml"
+          pre-steps:
+            - checkout
+            - run:
+                name: Set target branch for changelog diffs and MQ merge
+                command: |
+                  export TARGET_BRANCH=main
+                  echo "export TARGET_BRANCH=$TARGET_BRANCH" >> $BASH_ENV; source $BASH_ENV
+
+            - run:
+                name: check for draft PR to not run CI tests
+                command: |
+                  GITHUB_PR_NUMBER=${CIRCLE_PULL_REQUEST//[!0-9]/}
+                  RESPONSE=$(curl --silent \
+                    -H "Authorization: token $GITHUB_TOKEN" \
+                    -H "Accept: application/vnd.github.v3+json" \
+                    https://api.github.com/repos/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/pulls/$GITHUB_PR_NUMBER
+                  )
+
+                  DRAFT_PR=$(echo $RESPONSE | jq ".draft")
+                  if [[ $DRAFT_PR == 'true' ]]; then
+                    echo 'skipping CI for a Draft PR'
+                    exit 1
+                  fi

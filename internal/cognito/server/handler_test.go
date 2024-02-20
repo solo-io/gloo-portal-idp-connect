@@ -43,113 +43,183 @@ var _ = Describe("Server", func() {
 		}, mockCognitoClient)
 	})
 
-	Context("Client", func() {
-		When("no client exists", func() {
+	Context("Application", func() {
+
+		It("returns error code on nil body", func() {
+			resp, err := s.CreateApplication(ctx, portalv1.CreateApplicationRequestObject{})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateApplication400JSONResponse{}))
+		})
+
+		When("no application exists", func() {
 			BeforeEach(func() {
-				genClientId := "2r7vpfuuhbimiqq9bmfde1e3t3"
-				genClientSecret := "6au6kel0b"
-
 				// Return generated client ID and Secret on user-provided client name.
-				mockCognitoClient.EXPECT().CreateUserPoolClient(ctx, gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
-					func(
-						ctx context.Context,
-						input *cognito.CreateUserPoolClientInput,
-						optFns ...interface{},
-					) (*cognito.CreateUserPoolClientOutput, error) {
-
-						return &cognito.CreateUserPoolClientOutput{
-							UserPoolClient: &types.UserPoolClientType{
-								ClientId:     &genClientId,
-								ClientSecret: &genClientSecret,
-								ClientName:   input.ClientName,
-							},
-						}, nil
-					})
+				mockCognitoClient.EXPECT().CreateUserPoolClient(ctx, gomock.Any(), gomock.Any()).Times(0)
 
 				// Return client not found error on describe.
-				mockCognitoClient.EXPECT().DeleteUserPoolClient(ctx, gomock.Any(), gomock.Any()).AnyTimes().Return(
-					nil,
-					&smithyhttp.ResponseError{
-						Response: &smithyhttp.Response{
-							Response: &http.Response{
-								StatusCode: 404,
-								Status:     "Resource Not Found",
-							},
-						},
-						Err: errors.New("client does not exist"),
-					},
-				)
-			})
-			It("can create a client", func() {
-				client := "test-client"
-				resp, err := s.CreateClient(ctx, portalv1.CreateClientRequestObject{
-					Body: &portalv1.CreateClientJSONRequestBody{
-						ClientName: client,
-					},
-				})
-				Expect(err).NotTo(HaveOccurred())
-				Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateClient201JSONResponse{}))
-				resp200 := resp.(portalv1.CreateClient201JSONResponse)
-				Expect(*resp200.ClientName).To(Equal(client))
-				Expect(resp200.ClientId).NotTo(BeNil())
-				Expect(resp200.ClientSecret).NotTo(BeNil())
-			})
-
-			It("returns error code on nil body", func() {
-				resp, err := s.CreateClient(ctx, portalv1.CreateClientRequestObject{})
-				Expect(err).NotTo(HaveOccurred())
-				Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateClient400JSONResponse{}))
+				mockCognitoClient.EXPECT().DeleteUserPoolClient(ctx, gomock.Any(), gomock.Any()).Times(0)
 			})
 
 			It("returns not found code on deletion", func() {
-				resp, err := s.DeleteClient(ctx, portalv1.DeleteClientRequestObject{
-					Id: "test-client",
+				resp, err := s.DeleteApplication(ctx, portalv1.DeleteApplicationRequestObject{
+					Name: "test-client",
 				})
 				Expect(err).NotTo(HaveOccurred())
-				Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteClient404JSONResponse{}))
-				resp404 := resp.(portalv1.DeleteClient404JSONResponse)
+				Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteApplication404JSONResponse{}))
+				resp404 := resp.(portalv1.DeleteApplication404JSONResponse)
 				Expect(resp404.Code).To(Equal(404))
+			})
+
+			It("returns not found code on update", func() {
+				resp, err := s.UpdateAppAPIProducts(ctx, portalv1.UpdateAppAPIProductsRequestObject{
+					Name: "test-client",
+					Body: &portalv1.UpdateAppAPIProductsJSONRequestBody{
+						ApiProductNames: []string{"test-APIProduct"},
+					},
+				})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(resp).To(BeAssignableToTypeOf(portalv1.UpdateAppAPIProducts404JSONResponse{}))
+				resp404 := resp.(portalv1.UpdateAppAPIProducts404JSONResponse)
+				Expect(resp404.Code).To(Equal(404))
+			})
+
+			It("returns not found code on register", func() {
+				resp, err := s.RegisterAppOauthClient(ctx, portalv1.RegisterAppOauthClientRequestObject{
+					Name: "test-client",
+				})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(resp).To(BeAssignableToTypeOf(portalv1.RegisterAppOauthClient404JSONResponse{}))
+				resp404 := resp.(portalv1.RegisterAppOauthClient404JSONResponse)
+				Expect(resp404.Code).To(Equal(404))
+			})
+
+			It("can create application", func() {
+				client := "test-client"
+				resp, err := s.CreateApplication(ctx, portalv1.CreateApplicationRequestObject{
+					Body: &portalv1.CreateApplicationJSONRequestBody{
+						Name: client,
+					},
+				})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateApplication201JSONResponse{}))
 			})
 		})
 
-		When("client exists", func() {
-			var (
-				clientId   = "2r7vpfuuhbimiqq9bmfde1e3t3"
-				clientName = "test-client"
-			)
+		When("application exists", func() {
+			const clientName = "test-client"
 			BeforeEach(func() {
-				genClientId := "4q5270uvfj8v86vc8oqfk3f4m9"
-
-				// Delete client on delete
-				mockCognitoClient.EXPECT().DeleteUserPoolClient(ctx, gomock.Any(), gomock.Any()).AnyTimes().Return(
-					&cognito.DeleteUserPoolClientOutput{},
-					nil,
-				)
-
-				// Create client with new id when same name is given.
-				mockCognitoClient.EXPECT().CreateUserPoolClient(ctx, gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
-					func(
-						ctx context.Context,
-						input *cognito.CreateUserPoolClientInput,
-						optFns ...interface{},
-					) (*cognito.CreateUserPoolClientOutput, error) {
-						return &cognito.CreateUserPoolClientOutput{
-							UserPoolClient: &types.UserPoolClientType{
-								ClientId:   &genClientId,
-								ClientName: &clientName,
-							},
-						}, nil
-					})
-			})
-
-			It("can delete the client", func() {
-				resp, err := s.DeleteClient(ctx, portalv1.DeleteClientRequestObject{
-					Id: clientId,
+				resp, err := s.CreateApplication(ctx, portalv1.CreateApplicationRequestObject{
+					Body: &portalv1.CreateApplicationJSONRequestBody{
+						Name: clientName,
+					},
 				})
 				Expect(err).NotTo(HaveOccurred())
-				Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteClient204Response{}))
+				Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateApplication201JSONResponse{}))
+			})
+			When("client does not exist", func() {
+				const (
+					genClientId     = "2r7vpfuuhbimiqq9bmfde1e3t3"
+					genClientSecret = "6au6kel0b"
+				)
+
+				BeforeEach(func() {
+					// Return generated client ID and Secret on user-provided client name.
+					mockCognitoClient.EXPECT().CreateUserPoolClient(ctx, gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
+						func(
+							ctx context.Context,
+							input *cognito.CreateUserPoolClientInput,
+							optFns ...interface{},
+						) (*cognito.CreateUserPoolClientOutput, error) {
+
+							client := genClientId
+							secret := genClientSecret
+							return &cognito.CreateUserPoolClientOutput{
+								UserPoolClient: &types.UserPoolClientType{
+									ClientId:     &client,
+									ClientSecret: &secret,
+									ClientName:   input.ClientName,
+								},
+							}, nil
+						})
+
+					// Return client not found error on delete.
+					mockCognitoClient.EXPECT().DeleteUserPoolClient(ctx, gomock.Any(), gomock.Any()).Times(0)
+				})
+
+				It("can create a client", func() {
+					client := "test-client"
+					resp, err := s.RegisterAppOauthClient(ctx, portalv1.RegisterAppOauthClientRequestObject{
+						Name: client,
+					})
+					Expect(err).NotTo(HaveOccurred())
+					Expect(resp).To(BeAssignableToTypeOf(portalv1.RegisterAppOauthClient201JSONResponse{}))
+					resp200 := resp.(portalv1.RegisterAppOauthClient201JSONResponse)
+					Expect(*resp200.ClientName).To(Equal(client))
+					Expect(resp200.ClientId).NotTo(BeNil())
+					Expect(resp200.ClientSecret).NotTo(BeNil())
+				})
+
+				It("does not call OIDC deletion on delete", func() {
+					resp, err := s.DeleteApplication(ctx, portalv1.DeleteApplicationRequestObject{
+						Name: "test-client",
+					})
+					Expect(err).NotTo(HaveOccurred())
+					Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteApplication204Response{}))
+				})
 			})
 
+			When("client exists", func() {
+				const genClientId = "4q5270uvfj8v86vc8oqfk3f4m9"
+				BeforeEach(func() {
+
+					// Create client with new id when same name is given.
+					mockCognitoClient.EXPECT().CreateUserPoolClient(ctx, gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
+						func(
+							ctx context.Context,
+							input *cognito.CreateUserPoolClientInput,
+							optFns ...interface{},
+						) (*cognito.CreateUserPoolClientOutput, error) {
+							client := clientName
+							clientId := genClientId
+							return &cognito.CreateUserPoolClientOutput{
+								UserPoolClient: &types.UserPoolClientType{
+									ClientId:   &clientId,
+									ClientName: &client,
+								},
+							}, nil
+						})
+
+					resp, err := s.RegisterAppOauthClient(ctx, portalv1.RegisterAppOauthClientRequestObject{
+						Name: clientName,
+					})
+					Expect(err).NotTo(HaveOccurred())
+					Expect(resp).To(BeAssignableToTypeOf(portalv1.RegisterAppOauthClient201JSONResponse{}))
+				})
+
+				It("deletes the client as well as the application", func() {
+					// Delete client on delete
+					mockCognitoClient.EXPECT().DeleteUserPoolClient(ctx, gomock.Any(), gomock.Any()).Times(1).Return(
+						&cognito.DeleteUserPoolClientOutput{},
+						nil,
+					)
+					resp, err := s.DeleteApplication(ctx, portalv1.DeleteApplicationRequestObject{
+						Name: clientName,
+					})
+					Expect(err).NotTo(HaveOccurred())
+					Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteApplication204Response{}))
+				})
+
+				It("cannot generate multiple clients for same application", func() {
+					resp, err := s.RegisterAppOauthClient(ctx, portalv1.RegisterAppOauthClientRequestObject{
+						Name: clientName,
+					})
+					Expect(err).NotTo(HaveOccurred())
+					Expect(resp).To(BeAssignableToTypeOf(portalv1.RegisterAppOauthClient201JSONResponse{}))
+					resp201 := resp.(portalv1.RegisterAppOauthClient201JSONResponse)
+					Expect(*resp201.ClientName).To(Equal(clientName))
+					Expect(*resp201.ClientId).NotTo(Equal(genClientId))
+				})
+			})
 		})
 
 		Context("APIProducts", func() {
@@ -233,7 +303,7 @@ var _ = Describe("Server", func() {
 				})
 				It("returns not found on delete", func() {
 					resp, err := s.DeleteAPIProduct(ctx, portalv1.DeleteAPIProductRequestObject{
-						ApiProduct: "non-existant-APIProduct",
+						Name: "non-existant-APIProduct",
 					})
 					Expect(err).NotTo(HaveOccurred())
 					Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteAPIProduct404JSONResponse{}))
@@ -289,7 +359,7 @@ var _ = Describe("Server", func() {
 				})
 				It("returns not found if deleting APIProduct not present", func() {
 					resp, err := s.DeleteAPIProduct(ctx, portalv1.DeleteAPIProductRequestObject{
-						ApiProduct: "non-existant-APIProduct",
+						Name: "non-existant-APIProduct",
 					})
 					Expect(err).NotTo(HaveOccurred())
 					Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteAPIProduct404JSONResponse{}))
@@ -297,7 +367,7 @@ var _ = Describe("Server", func() {
 
 				It("can delete the APIProduct", func() {
 					resp, err := s.DeleteAPIProduct(ctx, portalv1.DeleteAPIProductRequestObject{
-						ApiProduct: expScope,
+						Name: expScope,
 					})
 					Expect(err).NotTo(HaveOccurred())
 					Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteAPIProduct204Response{}))
@@ -356,26 +426,26 @@ var _ = Describe("Server", func() {
 			})
 			When("client does not exist", func() {
 				It("returns not found on update", func() {
-					resp, err := s.UpdateClientAPIProducts(ctx, portalv1.UpdateClientAPIProductsRequestObject{
-						Id: "non-existant-client",
-						Body: &portalv1.UpdateClientAPIProductsJSONRequestBody{
-							ApiProducts: expAPIProducts,
+					resp, err := s.UpdateAppAPIProducts(ctx, portalv1.UpdateAppAPIProductsRequestObject{
+						Name: "non-existant-client",
+						Body: &portalv1.UpdateAppAPIProductsJSONRequestBody{
+							ApiProductNames: expAPIProducts,
 						},
 					})
 					Expect(err).NotTo(HaveOccurred())
-					Expect(resp).To(BeAssignableToTypeOf(portalv1.UpdateClientAPIProducts404JSONResponse{}))
+					Expect(resp).To(BeAssignableToTypeOf(portalv1.UpdateAppAPIProducts404JSONResponse{}))
 				})
 			})
 			When("referencing client that does exist", func() {
 				It("can update client APIProducts", func() {
-					resp, err := s.UpdateClientAPIProducts(ctx, portalv1.UpdateClientAPIProductsRequestObject{
-						Id: expClient,
-						Body: &portalv1.UpdateClientAPIProductsJSONRequestBody{
-							ApiProducts: expAPIProducts,
+					resp, err := s.UpdateAppAPIProducts(ctx, portalv1.UpdateAppAPIProductsRequestObject{
+						Name: expClient,
+						Body: &portalv1.UpdateAppAPIProductsJSONRequestBody{
+							ApiProductNames: expAPIProducts,
 						},
 					})
 					Expect(err).NotTo(HaveOccurred())
-					Expect(resp).To(BeAssignableToTypeOf(portalv1.UpdateClientAPIProducts204Response{}))
+					Expect(resp).To(BeAssignableToTypeOf(portalv1.UpdateAppAPIProducts204Response{}))
 				})
 			})
 		})

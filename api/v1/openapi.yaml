@@ -52,6 +52,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '409':
+          description: Application already exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Unexpected error creating application.
           content:
@@ -98,7 +104,7 @@ paths:
   /applications/{name}/oauth2:
     post:
       description: Registers an application as an Oauth2 client in the Open Id Connect Provider.
-      operationId: CreateAppOauthClient
+      operationId: RegisterAppOauthClient
       parameters:
         - in: path
           name: "name"
@@ -133,15 +139,55 @@ paths:
                       }
                     }
           description: Successfully created client.
+        '404':
+          description: Application not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Client already exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           description: Unexpected error creating client.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-      summary: Creates a client in the OpenID Connect Provider.
+      summary: Registers a client in the OpenID Connect Provider associated with the application.
       tags:
         - Applications
+    delete:
+        description: Deletes an application's Oauth2 client in the Open Id Connect Provider.
+        operationId: DeleteAppOauthClient
+        parameters:
+          - in: path
+            name: "name"
+            required: true
+            description: (Required) Name for application to delete Oauth2 client.
+            schema:
+                type: string
+        responses:
+          '204':
+            description: Successfully deleted client.
+          '404':
+            description: Application not found.
+            content:
+              application/json:
+                schema:
+                    $ref: '#/components/schemas/Error'
+          '500':
+            description: Unexpected error deleting client.
+            content:
+              application/json:
+                schema:
+                    $ref: '#/components/schemas/Error'
+        summary: Deletes an application's Oauth2 client in the OpenID Connect Provider.
+        tags:
+            - Applications
   /applications/{name}/api-products:
     put:
       description: Update application's API Products.
@@ -161,9 +207,9 @@ paths:
             schema:
               type: object
               required:
-                - apiProducts
+                - apiProductNames
               properties:
-                apiProducts:
+                apiProductNames:
                   type: array
                   items:
                       type: string
@@ -239,16 +285,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-      summary: Creates API Product in the OpenID Connect Provider. Then, you can add this API Product to the application for your Portal applications with the `PUT /applications/{id}/api-products` API request
+      summary: Creates API Product in the OpenID Connect Provider. Then, you can add this API Product to the application for your Portal applications with the `PUT /applications/{name}/api-products` API request
       tags:
         - API Products
-  /api-products/{apiProduct}:
+  /api-products/{name}:
     delete:
       description: Deletes API Product in the Open Id Connect Provider for a given unique identifier.
       operationId: DeleteAPIProduct
       parameters:
         - in: path
-          name: "apiProduct"
+          name: "name"
           required: true
           description: (Required) Name of the API Product we'd like to delete.
           schema:

@@ -82,42 +82,42 @@ var _ = Describe("Server", func() {
 			})
 			It("can create a client", func() {
 				client := "test-client"
-				resp, err := s.CreateClient(ctx, portalv1.CreateClientRequestObject{
-					Body: &portalv1.CreateClientJSONRequestBody{
-						ClientName: client,
+				resp, err := s.CreateOAuthApplication(ctx, portalv1.CreateOAuthApplicationRequestObject{
+					Body: &portalv1.CreateOAuthApplicationJSONRequestBody{
+						Name: client,
 					},
 				})
 				Expect(err).NotTo(HaveOccurred())
-				Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateClient201JSONResponse{}))
-				resp200 := resp.(portalv1.CreateClient201JSONResponse)
+				Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateOAuthApplication201JSONResponse{}))
+				resp200 := resp.(portalv1.CreateOAuthApplication201JSONResponse)
 				Expect(*resp200.ClientName).To(Equal(client))
 				Expect(resp200.ClientId).NotTo(BeNil())
 				Expect(resp200.ClientSecret).NotTo(BeNil())
 			})
 
 			It("returns error code on nil body", func() {
-				resp, err := s.CreateClient(ctx, portalv1.CreateClientRequestObject{})
+				resp, err := s.CreateOAuthApplication(ctx, portalv1.CreateOAuthApplicationRequestObject{})
 				Expect(err).NotTo(HaveOccurred())
-				Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateClient400JSONResponse{}))
+				Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateOAuthApplication400JSONResponse{}))
 			})
 
 			It("returns error code on empty client name", func() {
-				resp, err := s.CreateClient(ctx, portalv1.CreateClientRequestObject{
-					Body: &portalv1.CreateClientJSONRequestBody{
-						ClientName: "",
+				resp, err := s.CreateOAuthApplication(ctx, portalv1.CreateOAuthApplicationRequestObject{
+					Body: &portalv1.CreateOAuthApplicationJSONRequestBody{
+						Name: "",
 					},
 				})
 				Expect(err).NotTo(HaveOccurred())
-				Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateClient400JSONResponse{}))
+				Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateOAuthApplication400JSONResponse{}))
 			})
 
 			It("returns not found code on deletion", func() {
-				resp, err := s.DeleteClient(ctx, portalv1.DeleteClientRequestObject{
+				resp, err := s.DeleteApplication(ctx, portalv1.DeleteApplicationRequestObject{
 					Id: "test-client",
 				})
 				Expect(err).NotTo(HaveOccurred())
-				Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteClient404JSONResponse{}))
-				resp404 := resp.(portalv1.DeleteClient404JSONResponse)
+				Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteApplication404JSONResponse{}))
+				resp404 := resp.(portalv1.DeleteApplication404JSONResponse)
 				Expect(resp404.Code).To(Equal(404))
 			})
 		})
@@ -153,11 +153,11 @@ var _ = Describe("Server", func() {
 			})
 
 			It("can delete the client", func() {
-				resp, err := s.DeleteClient(ctx, portalv1.DeleteClientRequestObject{
+				resp, err := s.DeleteApplication(ctx, portalv1.DeleteApplicationRequestObject{
 					Id: clientId,
 				})
 				Expect(err).NotTo(HaveOccurred())
-				Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteClient204Response{}))
+				Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteApplication204Response{}))
 			})
 
 		})
@@ -243,7 +243,7 @@ var _ = Describe("Server", func() {
 				})
 				It("returns not found on delete", func() {
 					resp, err := s.DeleteAPIProduct(ctx, portalv1.DeleteAPIProductRequestObject{
-						ApiProduct: "non-existant-APIProduct",
+						Name: "non-existant-APIProduct",
 					})
 					Expect(err).NotTo(HaveOccurred())
 					Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteAPIProduct404JSONResponse{}))
@@ -299,7 +299,7 @@ var _ = Describe("Server", func() {
 				})
 				It("returns not found if deleting APIProduct not present", func() {
 					resp, err := s.DeleteAPIProduct(ctx, portalv1.DeleteAPIProductRequestObject{
-						ApiProduct: "non-existant-APIProduct",
+						Name: "non-existant-APIProduct",
 					})
 					Expect(err).NotTo(HaveOccurred())
 					Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteAPIProduct404JSONResponse{}))
@@ -307,7 +307,7 @@ var _ = Describe("Server", func() {
 
 				It("can delete the APIProduct", func() {
 					resp, err := s.DeleteAPIProduct(ctx, portalv1.DeleteAPIProductRequestObject{
-						ApiProduct: expScope,
+						Name: expScope,
 					})
 					Expect(err).NotTo(HaveOccurred())
 					Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteAPIProduct204Response{}))
@@ -366,26 +366,26 @@ var _ = Describe("Server", func() {
 			})
 			When("client does not exist", func() {
 				It("returns not found on update", func() {
-					resp, err := s.UpdateClientAPIProducts(ctx, portalv1.UpdateClientAPIProductsRequestObject{
+					resp, err := s.UpdateAppAPIProducts(ctx, portalv1.UpdateAppAPIProductsRequestObject{
 						Id: "non-existant-client",
-						Body: &portalv1.UpdateClientAPIProductsJSONRequestBody{
+						Body: &portalv1.UpdateAppAPIProductsJSONRequestBody{
 							ApiProducts: expAPIProducts,
 						},
 					})
 					Expect(err).NotTo(HaveOccurred())
-					Expect(resp).To(BeAssignableToTypeOf(portalv1.UpdateClientAPIProducts404JSONResponse{}))
+					Expect(resp).To(BeAssignableToTypeOf(portalv1.UpdateAppAPIProducts404JSONResponse{}))
 				})
 			})
 			When("referencing client that does exist", func() {
 				It("can update client APIProducts", func() {
-					resp, err := s.UpdateClientAPIProducts(ctx, portalv1.UpdateClientAPIProductsRequestObject{
+					resp, err := s.UpdateAppAPIProducts(ctx, portalv1.UpdateAppAPIProductsRequestObject{
 						Id: expClient,
-						Body: &portalv1.UpdateClientAPIProductsJSONRequestBody{
+						Body: &portalv1.UpdateAppAPIProductsJSONRequestBody{
 							ApiProducts: expAPIProducts,
 						},
 					})
 					Expect(err).NotTo(HaveOccurred())
-					Expect(resp).To(BeAssignableToTypeOf(portalv1.UpdateClientAPIProducts204Response{}))
+					Expect(resp).To(BeAssignableToTypeOf(portalv1.UpdateAppAPIProducts204Response{}))
 				})
 			})
 		})

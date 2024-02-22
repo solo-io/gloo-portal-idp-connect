@@ -18,32 +18,17 @@ type Error struct {
 
 // CreateAPIProductJSONBody defines parameters for CreateAPIProduct.
 type CreateAPIProductJSONBody struct {
-	ApiProduct  ApiProduct              `json:"apiProduct"`
-	Passthrough *map[string]interface{} `json:"passthrough,omitempty"`
-}
-
-// DeleteAPIProductParams defines parameters for DeleteAPIProduct.
-type DeleteAPIProductParams struct {
-	// Passthrough Optionally include passthrough data.
-	Passthrough *string `form:"passthrough,omitempty" json:"passthrough,omitempty"`
+	ApiProduct ApiProduct `json:"apiProduct"`
 }
 
 // CreateOAuthApplicationJSONBody defines parameters for CreateOAuthApplication.
 type CreateOAuthApplicationJSONBody struct {
-	Name        string                  `json:"name"`
-	Passthrough *map[string]interface{} `json:"passthrough,omitempty"`
-}
-
-// DeleteApplicationParams defines parameters for DeleteApplication.
-type DeleteApplicationParams struct {
-	// Passthrough Optionally include passthrough data as a json string.
-	Passthrough *string `form:"passthrough,omitempty" json:"passthrough,omitempty"`
+	Name string `json:"name"`
 }
 
 // UpdateAppAPIProductsJSONBody defines parameters for UpdateAppAPIProducts.
 type UpdateAppAPIProductsJSONBody struct {
-	ApiProducts []string                `json:"apiProducts"`
-	Passthrough *map[string]interface{} `json:"passthrough,omitempty"`
+	ApiProducts []string `json:"apiProducts"`
 }
 
 // CreateAPIProductJSONRequestBody defines body for CreateAPIProduct for application/json ContentType.

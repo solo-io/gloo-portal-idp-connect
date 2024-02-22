@@ -16,19 +16,19 @@ import (
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// Creates API Product in the OpenID Connect Provider. Then, you can add this API Product to the application for your Portal applications with the `PUT /applications/{id}/api-products` API request
+	// Creates API Product in the OpenID Connect Provider. Then, you can add this API Product to the application for your Portal applications with the `PUT /applications/{id}/api-products` API request.
 	// (POST /api-products)
 	CreateAPIProduct(ctx echo.Context) error
 	// Deletes API Product in the OpenID Connect Provider.
 	// (DELETE /api-products/{name})
-	DeleteAPIProduct(ctx echo.Context, name string, params DeleteAPIProductParams) error
-	// Creates a client in the OpenID Connect Provider.
+	DeleteAPIProduct(ctx echo.Context, name string) error
+	// Creates an application of type oauth2.
 	// (POST /applications/oauth2)
 	CreateOAuthApplication(ctx echo.Context) error
 	// Deletes an application in the OpenID Connect Provider.
 	// (DELETE /applications/{id})
-	DeleteApplication(ctx echo.Context, id string, params DeleteApplicationParams) error
-	// Adds API Product to a application in the OpenID Connect Provider
+	DeleteApplication(ctx echo.Context, id string) error
+	// Updates the set of API Products that the application has access to in the OpenID Connect Provider.
 	// (PUT /applications/{id}/api-products)
 	UpdateAppAPIProducts(ctx echo.Context, id string) error
 }
@@ -58,17 +58,8 @@ func (w *ServerInterfaceWrapper) DeleteAPIProduct(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
 	}
 
-	// Parameter object where we will unmarshal all parameters from the context
-	var params DeleteAPIProductParams
-	// ------------- Optional query parameter "passthrough" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "passthrough", ctx.QueryParams(), &params.Passthrough)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter passthrough: %s", err))
-	}
-
 	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.DeleteAPIProduct(ctx, name, params)
+	err = w.Handler.DeleteAPIProduct(ctx, name)
 	return err
 }
 
@@ -92,17 +83,8 @@ func (w *ServerInterfaceWrapper) DeleteApplication(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter id: %s", err))
 	}
 
-	// Parameter object where we will unmarshal all parameters from the context
-	var params DeleteApplicationParams
-	// ------------- Optional query parameter "passthrough" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "passthrough", ctx.QueryParams(), &params.Passthrough)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter passthrough: %s", err))
-	}
-
 	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.DeleteApplication(ctx, id, params)
+	err = w.Handler.DeleteApplication(ctx, id)
 	return err
 }
 
@@ -202,8 +184,7 @@ func (response CreateAPIProduct500JSONResponse) VisitCreateAPIProductResponse(w 
 }
 
 type DeleteAPIProductRequestObject struct {
-	Name   string `json:"name"`
-	Params DeleteAPIProductParams
+	Name string `json:"name"`
 }
 
 type DeleteAPIProductResponseObject interface {
@@ -245,10 +226,9 @@ type CreateOAuthApplicationResponseObject interface {
 }
 
 type CreateOAuthApplication201JSONResponse struct {
-	ClientId            *string                 `json:"clientId,omitempty"`
-	ClientName          *string                 `json:"clientName,omitempty"`
-	ClientSecret        *string                 `json:"clientSecret,omitempty"`
-	PassthroughResponse *map[string]interface{} `json:"passthroughResponse,omitempty"`
+	ClientId     *string `json:"clientId,omitempty"`
+	ClientName   *string `json:"clientName,omitempty"`
+	ClientSecret *string `json:"clientSecret,omitempty"`
 }
 
 func (response CreateOAuthApplication201JSONResponse) VisitCreateOAuthApplicationResponse(w http.ResponseWriter) error {
@@ -277,8 +257,7 @@ func (response CreateOAuthApplication500JSONResponse) VisitCreateOAuthApplicatio
 }
 
 type DeleteApplicationRequestObject struct {
-	Id     string `json:"id"`
-	Params DeleteApplicationParams
+	Id string `json:"id"`
 }
 
 type DeleteApplicationResponseObject interface {
@@ -357,19 +336,19 @@ func (response UpdateAppAPIProducts500JSONResponse) VisitUpdateAppAPIProductsRes
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
-	// Creates API Product in the OpenID Connect Provider. Then, you can add this API Product to the application for your Portal applications with the `PUT /applications/{id}/api-products` API request
+	// Creates API Product in the OpenID Connect Provider. Then, you can add this API Product to the application for your Portal applications with the `PUT /applications/{id}/api-products` API request.
 	// (POST /api-products)
 	CreateAPIProduct(ctx context.Context, request CreateAPIProductRequestObject) (CreateAPIProductResponseObject, error)
 	// Deletes API Product in the OpenID Connect Provider.
 	// (DELETE /api-products/{name})
 	DeleteAPIProduct(ctx context.Context, request DeleteAPIProductRequestObject) (DeleteAPIProductResponseObject, error)
-	// Creates a client in the OpenID Connect Provider.
+	// Creates an application of type oauth2.
 	// (POST /applications/oauth2)
 	CreateOAuthApplication(ctx context.Context, request CreateOAuthApplicationRequestObject) (CreateOAuthApplicationResponseObject, error)
 	// Deletes an application in the OpenID Connect Provider.
 	// (DELETE /applications/{id})
 	DeleteApplication(ctx context.Context, request DeleteApplicationRequestObject) (DeleteApplicationResponseObject, error)
-	// Adds API Product to a application in the OpenID Connect Provider
+	// Updates the set of API Products that the application has access to in the OpenID Connect Provider.
 	// (PUT /applications/{id}/api-products)
 	UpdateAppAPIProducts(ctx context.Context, request UpdateAppAPIProductsRequestObject) (UpdateAppAPIProductsResponseObject, error)
 }
@@ -416,11 +395,10 @@ func (sh *strictHandler) CreateAPIProduct(ctx echo.Context) error {
 }
 
 // DeleteAPIProduct operation middleware
-func (sh *strictHandler) DeleteAPIProduct(ctx echo.Context, name string, params DeleteAPIProductParams) error {
+func (sh *strictHandler) DeleteAPIProduct(ctx echo.Context, name string) error {
 	var request DeleteAPIProductRequestObject
 
 	request.Name = name
-	request.Params = params
 
 	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
 		return sh.ssi.DeleteAPIProduct(ctx.Request().Context(), request.(DeleteAPIProductRequestObject))
@@ -471,11 +449,10 @@ func (sh *strictHandler) CreateOAuthApplication(ctx echo.Context) error {
 }
 
 // DeleteApplication operation middleware
-func (sh *strictHandler) DeleteApplication(ctx echo.Context, id string, params DeleteApplicationParams) error {
+func (sh *strictHandler) DeleteApplication(ctx echo.Context, id string) error {
 	var request DeleteApplicationRequestObject
 
 	request.Id = id
-	request.Params = params
 
 	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
 		return sh.ssi.DeleteApplication(ctx.Request().Context(), request.(DeleteApplicationRequestObject))

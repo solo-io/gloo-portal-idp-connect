@@ -11,7 +11,7 @@ paths:
       description: Creates an application of type oauth2. This is intended to be integrated with an Open Id Connect Provider that the IDP Connect implementation integrates with. Note that the `clientSecret` is never stored in the database and is shown to the user only once. Keep this secret to make future requests to the API products in the Portal.
       operationId: CreateOAuthApplication
       requestBody:
-        description: (Required) name for creating name of the client. `passthrough` is directly passed to the IDP Connect implementation that will create the client in the Open Id Connect Provider.
+        description: (Required) name for creating name of the client.
         required: true
         content:
           application/json:
@@ -23,8 +23,6 @@ paths:
                 name:
                   type: string
                   example: "example-user-pool-developer-1"
-                passthrough:
-                  type: object
       responses:
         '201':
           content:
@@ -41,16 +39,6 @@ paths:
                   clientName:
                     type: string
                     example: "example-user-pool-developer-1"
-                  passthroughResponse:
-                    type: object
-                    example: {
-                      UserPoolClient: {
-                        AllowedOAuthScopes: [
-                          "email",
-                          "openid"
-                        ],
-                      }
-                    }
           description: Successfully created client.
         '400':
           description: Invalid input.
@@ -76,11 +64,6 @@ paths:
           name: "id"
           required: true
           description: (Required) ID for application to delete.
-          schema:
-            type: string
-        - in: query
-          name: "passthrough"
-          description: Optionally include passthrough data as a json string.
           schema:
             type: string
       responses:
@@ -127,11 +110,6 @@ paths:
                   items:
                       type: string
                       example: "example-api-product"
-                passthrough:
-                  type: object
-                  example: {
-                    UserPoolId: "example-user-pool"
-                  }
       responses:
         '204':
           description: Successfully added API Product to application.
@@ -172,11 +150,6 @@ paths:
               properties:
                 apiProduct:
                   $ref: '#/components/schemas/ApiProduct'
-                passthrough:
-                  type: object
-                  example: {
-                    UserPoolId: "example-user-pool"
-                  }
       responses:
         '201':
           description: Successfully created API Product.
@@ -210,11 +183,6 @@ paths:
           name: "name"
           required: true
           description: (Required) Name of the API Product we'd like to delete.
-          schema:
-            type: string
-        - in: query
-          name: "passthrough"
-          description: Optionally include passthrough data.
           schema:
             type: string
       responses:

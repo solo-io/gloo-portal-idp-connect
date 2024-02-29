@@ -110,7 +110,7 @@ spec:
         pathRewrite: /
         destinations:
           - ref:
-             name: tracks-rest-api
+              name: tracks-rest-api
               namespace: tracks
             port:
               number: 5000

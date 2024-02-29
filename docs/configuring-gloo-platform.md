@@ -110,21 +110,10 @@ spec:
         pathRewrite: /
         destinations:
           - ref:
-              name: tracks-rest-api
+             name: tracks-rest-api
               namespace: tracks
             port:
               number: 5000
-            subset:
-              version: 1.0.0
-            weight: 0
-          - ref:
-              name: tracks-rest-api
-              namespace: tracks
-            port:
-              number: 5000
-            subset:
-              version: 1.0.1
-            weight: 100
 ```
 
 

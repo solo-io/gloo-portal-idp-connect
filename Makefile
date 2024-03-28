@@ -38,7 +38,7 @@ install-go-tools: mod-download
 # Run go-generate on all sub-packages. This generates mocks and primitives used in the portal API implementation.
 .PHONY: go-generate
 go-generate:
-	go generate -v ./api/... ./internal/cognito/... ./internal/keycloak/...
+	go generate -v ./api/... ./internal/cognito/...
 
 RELEASE := "true"
 ifeq ($(TAGGED_VERSION),)

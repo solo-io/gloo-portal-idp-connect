@@ -17,7 +17,7 @@ func Command() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return server.ListenAndServe(context.Background(), serverOpts)
 		},
-		// option to silence usage when an error occurs.
+		// option to silence usage when an error occurs
 		SilenceUsage: true,
 	}
 

@@ -6,8 +6,6 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/aws/aws-sdk-go-v2/config"
-	cognito "github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
@@ -19,20 +17,20 @@ import (
 )
 
 type Options struct {
-	Port            string
-	CognitoUserPool string
-	ResourceServer  string
+	Port           string
+	Issuer         string
+	ResourceServer string
 }
 
 func (o *Options) AddToFlags(flag *pflag.FlagSet) {
 	flag.StringVar(&o.Port, "port", "8080", "Port for HTTP server")
-	flag.StringVar(&o.CognitoUserPool, "user-pool-id", "", "User pool ID")
+	flag.StringVar(&o.Issuer, "issuer", "", "Keycloak issuer URL (e.g. https://keycloak.example.com/realms/my-org)")
 	flag.StringVar(&o.ResourceServer, "resource-server", "", "Resource server to configure API Product scopes")
 }
 
 func (o *Options) Validate() error {
-	if o.CognitoUserPool == "" {
-		return eris.New("User pool is required")
+	if o.Issuer == "" {
+		return eris.New("Issuer is required")
 	}
 	if o.ResourceServer == "" {
 		return eris.New("Resource server is required")
@@ -54,25 +52,13 @@ func ListenAndServe(ctx context.Context, opts *Options) error {
 	// that server names match. We don't know how this thing will be run.
 	swagger.Servers = nil
 
-	// Unless performance is a concern, always use LoadDefaultConfig because it will search the environment
-	// for valid configuration; this allows users maximum flexibility and provides break-glass provider
-	// configuration options
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		return eris.Wrap(err, "failed to locate aws configuration using full provider chain")
-	}
-
-	cognitoClient := cognito.NewFromConfig(cfg)
 	// Create an instance of our handler which satisfies the generated interface
-	congitoHandler := NewStrictServerHandler(opts, cognitoClient)
-	portalHandler := portalv1.NewStrictHandler(congitoHandler, nil)
+	keycloakHandler := NewStrictServerHandler(opts)
+	portalHandler := portalv1.NewStrictHandler(keycloakHandler, nil)
 
 	e := echo.New()
-
-	// Use our validation middleware to check all requests against the
-	// OpenAPI schema.
+	// Log all requests
 	e.Use(echomiddleware.Logger())
-
 	// Use our validation middleware to check all requests against the
 	// OpenAPI schema.
 	e.Use(middleware.OapiRequestValidatorWithOptions(swagger, &middleware.Options{
@@ -81,9 +67,10 @@ func ListenAndServe(ctx context.Context, opts *Options) error {
 		}},
 	))
 
-	// We now register our petStore above as the handler for the interface
+	// We now register our portal handler above as the handler for the interface
 	portalv1.RegisterHandlers(e, portalHandler)
 
+	// And we serve HTTP until the world ends.
 	s := &http.Server{
 		Handler: e,
 		Addr:    net.JoinHostPort("0.0.0.0", opts.Port),

@@ -17,3 +17,6 @@ _helm_sync_dir/
 
 helm/Chart.yaml
 helm/values.yaml
+
+# Built binaries
+cmd/idp-connect

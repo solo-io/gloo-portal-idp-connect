@@ -4,19 +4,34 @@ import (
 	"context"
 	"errors"
 
-	"github.com/aws/smithy-go/transport/http"
+	resty "github.com/go-resty/resty/v2"
 	portalv1 "github.com/solo-io/gloo-portal-idp-connect/pkg/api/v1"
 )
 
 type StrictServerHandler struct {
-	issuer         string
-	resourceServer string
+	client               resty.Client
+	registrationEndpoint string
+	bearerToken          string
+	resourceServer       string
 }
 
-func NewStrictServerHandler(opts *Options) *StrictServerHandler {
+type CreatedClient struct {
+	Id     string `json:"client_id"`
+	Name   string `json:"client_name"`
+	Secret string `json:"client_secret"`
+}
+
+type KeycloakError struct {
+	Error       string `json:"error"`
+	Description string `json:"error_description"`
+}
+
+func NewStrictServerHandler(opts *Options, restyClient *resty.Client, registrationEndpoint string) *StrictServerHandler {
 	return &StrictServerHandler{
-		issuer:         opts.Issuer,
-		resourceServer: opts.ResourceServer,
+		client:               *restyClient,
+		registrationEndpoint: registrationEndpoint,
+		bearerToken:          opts.BearerToken,
+		resourceServer:       opts.ResourceServer,
 	}
 }
 
@@ -29,21 +44,25 @@ func (s *StrictServerHandler) CreateOAuthApplication(
 		return portalv1.CreateOAuthApplication400JSONResponse(newPortal400Error("client name is required")), nil
 	}
 
-	// DO IT
-	err := errors.New("unimplemented")
+	var createdClient CreatedClient
 
-	if err != nil {
-		return portalv1.CreateOAuthApplication500JSONResponse(unwrapError(err)), nil
+	resp, err := s.client.R().
+		SetAuthToken(s.bearerToken).
+		SetBody(map[string]interface{}{
+			"client_name": request.Body.Name,
+		}).
+		SetResult(&createdClient).
+		SetError(&KeycloakError{}).
+		Post(s.registrationEndpoint)
+
+	if err != nil || resp.IsError() {
+		return portalv1.CreateOAuthApplication500JSONResponse(unwrapError(resp, err)), nil
 	}
 
-	clientId := "client-id"
-	clientSecret := "client-secret"
-	clientName := "client-name"
-
 	return portalv1.CreateOAuthApplication201JSONResponse{
-		ClientId:     &clientId,
-		ClientSecret: &clientSecret,
-		ClientName:   &clientName,
+		ClientId:     &createdClient.Id,
+		ClientSecret: &createdClient.Secret,
+		ClientName:   &createdClient.Name,
 	}, nil
 }
 
@@ -57,11 +76,11 @@ func (s *StrictServerHandler) DeleteApplication(
 	err := errors.New("unimplemented")
 
 	if err != nil {
-		switch keycloakErr := unwrapError(err); keycloakErr.Code {
+		switch portalErr := unwrapError(nil, err); portalErr.Code {
 		case 404:
-			return portalv1.DeleteApplication404JSONResponse(keycloakErr), nil
+			return portalv1.DeleteApplication404JSONResponse(portalErr), nil
 		default:
-			return portalv1.DeleteApplication500JSONResponse(keycloakErr), nil
+			return portalv1.DeleteApplication500JSONResponse(portalErr), nil
 		}
 	}
 
@@ -81,11 +100,11 @@ func (s *StrictServerHandler) UpdateAppAPIProducts(
 	err := errors.New("unimplemented")
 
 	if err != nil {
-		switch keycloakErr := unwrapError(err); keycloakErr.Code {
+		switch portalErr := unwrapError(nil, err); portalErr.Code {
 		case 404:
-			return portalv1.UpdateAppAPIProducts404JSONResponse(keycloakErr), nil
+			return portalv1.UpdateAppAPIProducts404JSONResponse(portalErr), nil
 		default:
-			return portalv1.UpdateAppAPIProducts500JSONResponse(keycloakErr), nil
+			return portalv1.UpdateAppAPIProducts500JSONResponse(portalErr), nil
 		}
 	}
 
@@ -105,7 +124,7 @@ func (s *StrictServerHandler) CreateAPIProduct(
 	err := errors.New("unimplemented")
 
 	if err != nil {
-		return portalv1.CreateAPIProduct500JSONResponse(unwrapError(err)), nil
+		return portalv1.CreateAPIProduct500JSONResponse(unwrapError(nil, err)), nil
 	}
 
 	return portalv1.CreateAPIProduct201Response{}, nil
@@ -121,19 +140,28 @@ func (s *StrictServerHandler) DeleteAPIProduct(
 	err := errors.New("unimplemented")
 
 	if err != nil {
-		return portalv1.DeleteAPIProduct500JSONResponse(unwrapError(err)), nil
+		return portalv1.DeleteAPIProduct500JSONResponse(unwrapError(nil, err)), nil
 	}
 
 	return portalv1.DeleteAPIProduct204Response{}, nil
 }
 
-func unwrapError(err error) portalv1.Error {
-	var respErr *http.ResponseError
+func unwrapError(resp *resty.Response, err error) portalv1.Error {
+	if err == nil {
+		error := resp.Error().(*KeycloakError)
+		return portalv1.Error{
+			Code:    resp.StatusCode(),
+			Message: error.Error,
+			Reason:  error.Description,
+		}
+	}
+
+	var respErr *resty.ResponseError
 	if ok := errors.As(err, &respErr); ok {
 		return portalv1.Error{
-			Code:    respErr.HTTPStatusCode(),
-			Message: respErr.HTTPResponse().Status,
-			Reason:  respErr.Err.Error(),
+			Code:    respErr.Response.StatusCode(),
+			Message: respErr.Response.Status(),
+			Reason:  respErr.Error(),
 		}
 	}
 

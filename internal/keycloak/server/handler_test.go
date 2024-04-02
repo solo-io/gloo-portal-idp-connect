@@ -14,10 +14,12 @@ import (
 )
 
 const (
-	issuer                   = "https://keycloak.example.com/realms/my-org"
-	fakeRegistrationEndpoint = issuer + "/clients-registrations/openid-connect"
-	bearerToken              = "fake-token"
-	resourceServer           = "access"
+	issuer            = "https://keycloak.example.com/realms/my-org"
+	mgmtClientId      = "client-id"
+	mgmtClientSecret  = "client-secret"
+	fakeTokenEndpoint = issuer + "/protocol/openid-connect/token"
+	fakeAdminEndpoint = "https://keycloak.example.com/admin/realms/my-org"
+	resourceServer    = "access"
 )
 
 var _ = Describe("Server", func() {
@@ -33,30 +35,45 @@ var _ = Describe("Server", func() {
 		httpmock.ActivateNonDefault(restyClient.GetClient())
 
 		s = server.NewStrictServerHandler(&server.Options{
-			Issuer:         issuer,
-			BearerToken:    bearerToken,
-			ResourceServer: resourceServer,
+			Issuer:           issuer,
+			MgmtClientId:     mgmtClientId,
+			MgmtClientSecret: mgmtClientSecret,
+			ResourceServer:   resourceServer,
 		},
 			restyClient,
-			fakeRegistrationEndpoint)
+			fakeTokenEndpoint)
 	})
 
 	Context("Client", func() {
 		When("no client exists", func() {
 
 			clientName := "test-client"
-			genClientId := "2r7vpfuuhbimiqq9bmfde1e3t3"
-			genClientSecret := "6au6kel0b"
+			genClientSecret := "created-client-secret"
 
 			BeforeEach(func() {
+				dummyToken := &server.KeycloakToken{
+					AccessToken: "access-token",
+				}
+
 				dummyClient := &server.CreatedClient{
-					Id:     genClientId,
+					Id:     clientName,
 					Name:   clientName,
 					Secret: genClientSecret,
 				}
 
-				responder, _ := httpmock.NewJsonResponder(200, dummyClient)
-				httpmock.RegisterResponder("POST", fakeRegistrationEndpoint, responder)
+				dummyError := &server.KeycloakError{
+					Error: "not found",
+					Description: "client doesn't exist",
+				}
+
+				newTokenResponder, _ := httpmock.NewJsonResponder(200, dummyToken)
+				httpmock.RegisterResponder("POST", fakeTokenEndpoint, newTokenResponder)
+
+				newClientResponder, _ := httpmock.NewJsonResponder(200, dummyClient)
+				httpmock.RegisterResponder("POST", issuer + "/clients-registrations/default", newClientResponder)
+
+				deleteClientResponder, _ := httpmock.NewJsonResponder(404, dummyError)
+				httpmock.RegisterResponder("DELETE", fakeAdminEndpoint + "/clients/" + clientName, deleteClientResponder)
 			})
 
 			It("can create a client", func() {
@@ -69,7 +86,7 @@ var _ = Describe("Server", func() {
 				Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateOAuthApplication201JSONResponse{}))
 				resp200 := resp.(portalv1.CreateOAuthApplication201JSONResponse)
 				Expect(*resp200.ClientName).To(Equal(clientName))
-				Expect(*resp200.ClientId).To(Equal(genClientId))
+				Expect(*resp200.ClientId).To(Equal(clientName))
 				Expect(*resp200.ClientSecret).To(Equal(genClientSecret))
 			})
 
@@ -87,6 +104,16 @@ var _ = Describe("Server", func() {
 				})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateOAuthApplication400JSONResponse{}))
+			})
+
+			It("returns not found code on deletion", func() {
+				resp, err := s.DeleteApplication(ctx, portalv1.DeleteApplicationRequestObject{
+					Id: "test-client",
+				})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteApplication404JSONResponse{}))
+				resp404 := resp.(portalv1.DeleteApplication404JSONResponse)
+				Expect(resp404.Code).To(Equal(404))
 			})
 		})
 	})

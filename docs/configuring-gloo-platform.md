@@ -13,15 +13,15 @@ If not using the SPI and wanting to manually bootstrap AWS Cognito, follow these
 1. Create one or more “Resource Servers”, and for these Resource Servers, create scopes that map to the “apiProductId” (in this example, `tracks-rest-api` and `catstronauts-api`).
 1. Create an “App client”, and configure it so it:
    1. Has a client-id and client-secret
-   1. Can be used for “client credentials grant” OAuth flows. 
+   1. Can be used for “client credentials grant” OAuth flows.
    1. This can be configured in the “OAuth 2 Grant Types” section in app-client’s “Edit Hosted UI” submenu.
    1. In the same “Edit Hosted UI” submenu, give the app client access to one or more of the scopes we’ve configured earlier.
 
-
 ### Obtaining an access-token
+
 To obtain an OAuth access-token from Cognito, we first need to determine it’s “token endpoint”. We can fetch that information from Cognito’s “.well-known/openid-configuration” endpoint:
 
-```
+```sh
 export AWS_COGNITO_REGION={your cognito region}
 export AWS_COGNITO_USER_POOL_ID={your cognito user-pool id}
 
@@ -30,7 +30,7 @@ curl https://cognito-idp.$AWS_COGNITO_REGION.amazonaws.com/$AWS_COGNITO_USER_POO
 
 From the response, find the “token_endpoint”. We can now fetch a new access-token for our service account by using the client-credentials grant flow (note that in this example, we’re asking for 2 scopes, `access/catstronauts-api` and `access/tracks-rest-api` )
 
-```
+```yaml
 export TOKEN_ENDPOINT={your cognito token endpoint}
 export CLIENT_ID={your service account’s client-id}
 export CLIENT_SECRET={your service account’s client-secret}
@@ -45,7 +45,7 @@ $TOKEN_ENDPOINT
 
 You will be granted an access-token (JWT), which decoded should look something like this:
 
-```
+```json
 [
     {
         "kid": "toHqwIJt3ahSc6BbWdpabY6Han4psIwSbVfrI1Jod6I=",
@@ -70,7 +70,7 @@ Configuring the Gloo’s ExtAuthPolicy for your APIProduct/RouteTable
 
 In Gloo Gateway, your RouteTable defines your API Product. Below is an example of such an API Product for the Tracks API:
 
-```
+```yaml
 apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
 metadata:
@@ -116,12 +116,11 @@ spec:
               number: 5000
 ```
 
-
 In this RouteTable, notice the “apiProductId” in the Portal metadata which matches the name of one of our scopes (i.e. access/tracks-rest-api). This enables the authorization based on scopes using OPA. Note that this label is just an example and can be named anything.
 
 We can now create a ConfigMap with our OPA policies to only grant access to API Products when the access-token has a scope that matches the ApiProductId:
 
-```
+```yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -161,7 +160,7 @@ data:
 
 Finally, we can apply the ExtAuthPolicy to our ApiProduct route(s) that performs JWT validation using the Cognito’s JSON Web Key Set (JWKS), which contains the public keys used  to verify the validity of the token, and applies to OPA policy to perform Authorization checks:
 
-```
+```yaml
 apiVersion: security.policy.gloo.solo.io/v2
 kind: ExtAuthPolicy
 metadata:
@@ -197,7 +196,7 @@ Note that the url for remoteJwks url might be different for your Cognito instanc
 
 When we now call our service with the access-token we fetched earlier from Cognito, we can see that we can access our service:
 
-```
+```sh
 export ACCESS_TOKEN={your cognito access-token}
 
 curl -v -H "Authorization: Bearer $ACCESS_TOKEN" http://api.example.com/trackapi/v1/tracks

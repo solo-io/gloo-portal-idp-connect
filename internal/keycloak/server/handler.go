@@ -3,22 +3,30 @@ package server
 import (
 	"context"
 	"errors"
+	"regexp"
 
 	resty "github.com/go-resty/resty/v2"
 	portalv1 "github.com/solo-io/gloo-portal-idp-connect/pkg/api/v1"
 )
 
 type StrictServerHandler struct {
-	client               resty.Client
-	registrationEndpoint string
-	bearerToken          string
-	resourceServer       string
+	restClient       resty.Client
+	issuer           string
+	tokenEndpoint    string
+	adminRoot        string
+	mgmtClientId     string
+	mgmtClientSecret string
+	resourceServer   string
+}
+
+type KeycloakToken struct {
+	AccessToken string `json:"access_token"`
 }
 
 type CreatedClient struct {
-	Id     string `json:"client_id"`
-	Name   string `json:"client_name"`
-	Secret string `json:"client_secret"`
+	Id     string `json:"id"`
+	Name   string `json:"name"`
+	Secret string `json:"secret"`
 }
 
 type KeycloakError struct {
@@ -26,12 +34,18 @@ type KeycloakError struct {
 	Description string `json:"error_description"`
 }
 
-func NewStrictServerHandler(opts *Options, restyClient *resty.Client, registrationEndpoint string) *StrictServerHandler {
+func NewStrictServerHandler(opts *Options, restyClient *resty.Client, tokenEndpoint string) *StrictServerHandler {
+	r := regexp.MustCompile("^(https?:.*?)/realms/(.[^/]*)/?$")
+	adminRoot := r.ReplaceAllString(opts.Issuer, "$1/admin/realms/$2")
+
 	return &StrictServerHandler{
-		client:               *restyClient,
-		registrationEndpoint: registrationEndpoint,
-		bearerToken:          opts.BearerToken,
-		resourceServer:       opts.ResourceServer,
+		restClient:       *restyClient,
+		issuer:           opts.Issuer,
+		tokenEndpoint:    tokenEndpoint,
+		adminRoot:        adminRoot,
+		mgmtClientId:     opts.MgmtClientId,
+		mgmtClientSecret: opts.MgmtClientSecret,
+		resourceServer:   opts.ResourceServer,
 	}
 }
 
@@ -44,16 +58,34 @@ func (s *StrictServerHandler) CreateOAuthApplication(
 		return portalv1.CreateOAuthApplication400JSONResponse(newPortal400Error("client name is required")), nil
 	}
 
+	var token KeycloakToken
+
+	// TODO: getting a token should be a helper function
+	tokenResponse, err := s.restClient.R().
+		SetBasicAuth(s.mgmtClientId, s.mgmtClientSecret).
+		SetFormData(map[string]string{
+			"grant_type": "urn:ietf:params:oauth:grant-type:uma-ticket",
+			"audience":   s.mgmtClientId,
+		}).
+		SetResult(&token).
+		SetError(&KeycloakError{}).
+		Post(s.tokenEndpoint)
+
+	if err != nil || tokenResponse.IsError() {
+		return portalv1.CreateOAuthApplication500JSONResponse(unwrapError(tokenResponse, err)), nil
+	}
+
 	var createdClient CreatedClient
 
-	resp, err := s.client.R().
-		SetAuthToken(s.bearerToken).
+	resp, err := s.restClient.R().
+		SetAuthToken(token.AccessToken).
 		SetBody(map[string]interface{}{
-			"client_name": request.Body.Name,
+			"clientId": request.Body.Name,
+			"name":     request.Body.Name,
 		}).
 		SetResult(&createdClient).
 		SetError(&KeycloakError{}).
-		Post(s.registrationEndpoint)
+		Post(s.issuer + "/clients-registrations/default")
 
 	if err != nil || resp.IsError() {
 		return portalv1.CreateOAuthApplication500JSONResponse(unwrapError(resp, err)), nil
@@ -72,11 +104,30 @@ func (s *StrictServerHandler) DeleteApplication(
 	request portalv1.DeleteApplicationRequestObject,
 ) (portalv1.DeleteApplicationResponseObject, error) {
 
-	// DO IT
-	err := errors.New("unimplemented")
+	var token KeycloakToken
 
-	if err != nil {
-		switch portalErr := unwrapError(nil, err); portalErr.Code {
+	// TODO: getting a token should be a helper function
+	tokenResponse, err := s.restClient.R().
+		SetBasicAuth(s.mgmtClientId, s.mgmtClientSecret).
+		SetFormData(map[string]string{
+			"grant_type": "urn:ietf:params:oauth:grant-type:uma-ticket",
+			"audience":   s.mgmtClientId,
+		}).
+		SetResult(&token).
+		SetError(&KeycloakError{}).
+		Post(s.tokenEndpoint)
+
+	if err != nil || tokenResponse.IsError() {
+		return portalv1.DeleteApplication500JSONResponse(unwrapError(tokenResponse, err)), nil
+	}
+
+	resp, err := s.restClient.R().
+		SetAuthToken(token.AccessToken).
+		SetError(&KeycloakError{}).
+		Delete(s.adminRoot + "/clients/" + request.Id)
+
+	if err != nil || resp.IsError() {
+		switch portalErr := unwrapError(resp, err); portalErr.Code {
 		case 404:
 			return portalv1.DeleteApplication404JSONResponse(portalErr), nil
 		default:
@@ -96,7 +147,7 @@ func (s *StrictServerHandler) UpdateAppAPIProducts(
 		return portalv1.UpdateAppAPIProducts400JSONResponse(newPortal400Error("request body is required")), nil
 	}
 
-	// DO IT
+	// TODO: implement updating API products
 	err := errors.New("unimplemented")
 
 	if err != nil {
@@ -120,7 +171,7 @@ func (s *StrictServerHandler) CreateAPIProduct(
 		return portalv1.CreateAPIProduct400JSONResponse(newPortal400Error("request body is required")), nil
 	}
 
-	// DO IT
+	// TODO: implement creating API products
 	err := errors.New("unimplemented")
 
 	if err != nil {
@@ -136,7 +187,7 @@ func (s *StrictServerHandler) DeleteAPIProduct(
 	request portalv1.DeleteAPIProductRequestObject,
 ) (portalv1.DeleteAPIProductResponseObject, error) {
 
-	// DO IT
+	// TODO: implement deleting API products
 	err := errors.New("unimplemented")
 
 	if err != nil {

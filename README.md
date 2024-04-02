@@ -14,15 +14,9 @@ Here is a list of Identity Providers that we currently support:
 
 ### Keycloak
 
-The IDP Connect implementation for Keycloak is based on the [OpenID Connect Dynamic Client Registration 1.0](https://openid.net/specs/openid-connect-registration-1_0.html) (DCR) specification. DCR is supported by several IDPs, but this implementation has only been tested with Keycloak and is not guaranteed to work with other IDPs that have implemented DCR.
-
 The following requirements must be met for the Keycloak IDP Connect service to work with a given Keycloak instance:
 
-* *Trusted hosts:* You'll need to make a change to the realm settings in the Keycloak admin console to permit client registration requests from certain hosts. Under the "Clients" settings for your realm, click the "Client registration" tab then the "Trusted Hosts" policy. Here, either disable "Host Sending Client Registration Request Must Match" or add the hosts that client registration requests will originate from.
-
-For a secure deployment, you should also consider the following:
-
-* *Client Registration Policies:* By default, Keycloak will permit anonymous client registrations. However, you might wish to limit access to the client registration feature. A bearer token can be issued for a user or service account and provided to the Keycloak IDP Connect service. Any token provided to the IDP Connect servive must have `manage-client` permissions in Keycloak.
+* *Client credentials:* a client must be registered in your Keycloak realm, and the client must have the `manage-client` permission needed for IDP Connect to be able to manipulate self-service clients. Provide the ID and secret of this client in the `--client-id` and `--client-secret` arguments respectively.
 
 Please see <https://www.keycloak.org/docs/latest/securing_apps/#_client_registration> for more details of Keycloak's support for client registration.
 

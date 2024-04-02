@@ -22,20 +22,22 @@ const (
 )
 
 type Options struct {
-	Port           string
-	Issuer         string
-	BearerToken    string
-	ResourceServer string
+	Port             string
+	Issuer           string
+	MgmtClientId     string
+	MgmtClientSecret string
+	ResourceServer   string
 }
 
 type OpenidConfiguration struct {
-	RegistrationEndpoint string `json:"registration_endpoint"`
+	TokenEndpoint string `json:"token_endpoint"`
 }
 
 func (o *Options) AddToFlags(flag *pflag.FlagSet) {
 	flag.StringVar(&o.Port, "port", "8080", "Port for HTTP server")
 	flag.StringVar(&o.Issuer, "issuer", "", "Keycloak issuer URL (e.g. https://keycloak.example.com/realms/my-org)")
-	flag.StringVar(&o.BearerToken, "token", "", "Keycloak bearer token associated with the user or Service Account permitted to manage clients")
+	flag.StringVar(&o.MgmtClientId, "client-id", "", "ID of the Keycloak client that is authorised to manage clients")
+	flag.StringVar(&o.MgmtClientSecret, "client-secret", "", "Secret of the Keycloak client that is authorised to manage clients")
 	flag.StringVar(&o.ResourceServer, "resource-server", "", "Resource server to configure API Product scopes")
 }
 
@@ -63,9 +65,9 @@ func ListenAndServe(ctx context.Context, opts *Options) error {
 		return eris.Wrap(err, "Issuer configuration could not be discovered")
 	}
 
-	registrationEndpoint := resp.Result().(*OpenidConfiguration).RegistrationEndpoint
-	if len(registrationEndpoint) == 0 {
-		return eris.New("Registration endpoint was not provided by the issuer")
+	tokenEndpoint := resp.Result().(*OpenidConfiguration).TokenEndpoint
+	if len(tokenEndpoint) == 0 {
+		return eris.New("Token endpoint was not provided by the issuer")
 	}
 
 	swagger, err := portalv1.GetSwagger()
@@ -78,7 +80,7 @@ func ListenAndServe(ctx context.Context, opts *Options) error {
 	swagger.Servers = nil
 
 	// Create an instance of our handler which satisfies the generated interface
-	keycloakHandler := NewStrictServerHandler(opts, client, registrationEndpoint)
+	keycloakHandler := NewStrictServerHandler(opts, client, tokenEndpoint)
 	portalHandler := portalv1.NewStrictHandler(keycloakHandler, nil)
 
 	e := echo.New()

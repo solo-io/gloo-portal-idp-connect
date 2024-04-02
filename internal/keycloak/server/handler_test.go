@@ -48,6 +48,7 @@ var _ = Describe("Server", func() {
 		When("no client exists", func() {
 
 			clientName := "test-client"
+			genClientId := "created-client-id"
 			genClientSecret := "created-client-secret"
 
 			BeforeEach(func() {
@@ -56,7 +57,7 @@ var _ = Describe("Server", func() {
 				}
 
 				dummyClient := &server.CreatedClient{
-					Id:     clientName,
+					Id:     genClientId,
 					Name:   clientName,
 					Secret: genClientSecret,
 				}
@@ -86,7 +87,7 @@ var _ = Describe("Server", func() {
 				Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateOAuthApplication201JSONResponse{}))
 				resp200 := resp.(portalv1.CreateOAuthApplication201JSONResponse)
 				Expect(*resp200.ClientName).To(Equal(clientName))
-				Expect(*resp200.ClientId).To(Equal(clientName))
+				Expect(*resp200.ClientId).To(Equal(genClientId))
 				Expect(*resp200.ClientSecret).To(Equal(genClientSecret))
 			})
 
@@ -115,6 +116,32 @@ var _ = Describe("Server", func() {
 				resp404 := resp.(portalv1.DeleteApplication404JSONResponse)
 				Expect(resp404.Code).To(Equal(404))
 			})
+		})
+
+		When("client exists", func() {
+
+			genClientId := "created-client-id"
+
+			BeforeEach(func() {
+				dummyToken := &server.KeycloakToken{
+					AccessToken: "access-token",
+				}
+
+				newTokenResponder, _ := httpmock.NewJsonResponder(200, dummyToken)
+				httpmock.RegisterResponder("POST", fakeTokenEndpoint, newTokenResponder)
+
+				deleteClientResponder, _ := httpmock.NewJsonResponder(204, nil)
+				httpmock.RegisterResponder("DELETE", fakeAdminEndpoint + "/clients/" + genClientId, deleteClientResponder)
+			})
+
+			It("can delete the client", func() {
+				resp, err := s.DeleteApplication(ctx, portalv1.DeleteApplicationRequestObject{
+					Id: genClientId,
+				})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteApplication204Response{}))
+			})
+
 		})
 	})
 })

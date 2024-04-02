@@ -58,21 +58,10 @@ func (s *StrictServerHandler) CreateOAuthApplication(
 		return portalv1.CreateOAuthApplication400JSONResponse(newPortal400Error("client name is required")), nil
 	}
 
-	var token KeycloakToken
+	token, portalErr := getToken(s)
 
-	// TODO: getting a token should be a helper function
-	tokenResponse, err := s.restClient.R().
-		SetBasicAuth(s.mgmtClientId, s.mgmtClientSecret).
-		SetFormData(map[string]string{
-			"grant_type": "urn:ietf:params:oauth:grant-type:uma-ticket",
-			"audience":   s.mgmtClientId,
-		}).
-		SetResult(&token).
-		SetError(&KeycloakError{}).
-		Post(s.tokenEndpoint)
-
-	if err != nil || tokenResponse.IsError() {
-		return portalv1.CreateOAuthApplication500JSONResponse(unwrapError(tokenResponse, err)), nil
+	if portalErr != nil {
+		return portalv1.CreateOAuthApplication500JSONResponse(*portalErr), nil
 	}
 
 	var createdClient CreatedClient
@@ -104,21 +93,10 @@ func (s *StrictServerHandler) DeleteApplication(
 	request portalv1.DeleteApplicationRequestObject,
 ) (portalv1.DeleteApplicationResponseObject, error) {
 
-	var token KeycloakToken
+	token, portalErr := getToken(s)
 
-	// TODO: getting a token should be a helper function
-	tokenResponse, err := s.restClient.R().
-		SetBasicAuth(s.mgmtClientId, s.mgmtClientSecret).
-		SetFormData(map[string]string{
-			"grant_type": "urn:ietf:params:oauth:grant-type:uma-ticket",
-			"audience":   s.mgmtClientId,
-		}).
-		SetResult(&token).
-		SetError(&KeycloakError{}).
-		Post(s.tokenEndpoint)
-
-	if err != nil || tokenResponse.IsError() {
-		return portalv1.DeleteApplication500JSONResponse(unwrapError(tokenResponse, err)), nil
+	if portalErr != nil {
+		return portalv1.DeleteApplication500JSONResponse(*portalErr), nil
 	}
 
 	resp, err := s.restClient.R().
@@ -195,6 +173,27 @@ func (s *StrictServerHandler) DeleteAPIProduct(
 	}
 
 	return portalv1.DeleteAPIProduct204Response{}, nil
+}
+
+func getToken(s *StrictServerHandler) (*KeycloakToken, *portalv1.Error) {
+	var token KeycloakToken
+
+	tokenResponse, err := s.restClient.R().
+		SetBasicAuth(s.mgmtClientId, s.mgmtClientSecret).
+		SetFormData(map[string]string{
+			"grant_type": "urn:ietf:params:oauth:grant-type:uma-ticket",
+			"audience":   s.mgmtClientId,
+		}).
+		SetResult(&token).
+		SetError(&KeycloakError{}).
+		Post(s.tokenEndpoint)
+
+	if err != nil || tokenResponse.IsError() {
+		portalError := unwrapError(tokenResponse, err)
+		return nil, &portalError
+	}
+
+	return &token, nil
 }
 
 func unwrapError(resp *resty.Response, err error) portalv1.Error {

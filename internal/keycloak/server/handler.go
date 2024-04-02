@@ -71,6 +71,7 @@ func (s *StrictServerHandler) CreateOAuthApplication(
 		SetBody(map[string]interface{}{
 			"clientId": request.Body.Name,
 			"name":     request.Body.Name,
+			"authorizationServicesEnabled": true,
 		}).
 		SetResult(&createdClient).
 		SetError(&KeycloakError{}).
@@ -87,7 +88,7 @@ func (s *StrictServerHandler) CreateOAuthApplication(
 	}, nil
 }
 
-// DeleteApplication deletes an application by ID.
+// DeleteApplication deletes a client by ID.
 func (s *StrictServerHandler) DeleteApplication(
 	ctx context.Context,
 	request portalv1.DeleteApplicationRequestObject,

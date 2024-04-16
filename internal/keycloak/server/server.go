@@ -19,6 +19,7 @@ import (
 
 const (
 	wellKnownOpenIdConfigPath = "/.well-known/openid-configuration"
+	wellKnownUmaConfigPath    = "/.well-known/uma2-configuration"
 )
 
 type Options struct {
@@ -26,11 +27,19 @@ type Options struct {
 	Issuer           string
 	MgmtClientId     string
 	MgmtClientSecret string
-	ResourceServer   string
 }
 
 type OpenidConfiguration struct {
 	TokenEndpoint string `json:"token_endpoint"`
+}
+
+type UmaConfiguration struct {
+	ResourceRegistrationEndpoint string `json:"resource_registration_endpoint"`
+}
+
+type DiscoveredEndpoints struct {
+	Tokens               string
+	ResourceRegistration string
 }
 
 func (o *Options) AddToFlags(flag *pflag.FlagSet) {
@@ -38,15 +47,11 @@ func (o *Options) AddToFlags(flag *pflag.FlagSet) {
 	flag.StringVar(&o.Issuer, "issuer", "", "Keycloak issuer URL (e.g. https://keycloak.example.com/realms/my-org)")
 	flag.StringVar(&o.MgmtClientId, "client-id", "", "ID of the Keycloak client that is authorised to manage clients")
 	flag.StringVar(&o.MgmtClientSecret, "client-secret", "", "Secret of the Keycloak client that is authorised to manage clients")
-	flag.StringVar(&o.ResourceServer, "resource-server", "", "Resource server to configure API Product scopes")
 }
 
 func (o *Options) Validate() error {
 	if o.Issuer == "" {
 		return eris.New("Issuer is required")
-	}
-	if o.ResourceServer == "" {
-		return eris.New("Resource server is required")
 	}
 	return nil
 }
@@ -58,16 +63,33 @@ func ListenAndServe(ctx context.Context, opts *Options) error {
 
 	client := resty.New()
 
-	resp, err := client.R().
+	openidConfiguration, err := client.R().
 		SetResult(OpenidConfiguration{}).
 		Get(opts.Issuer + wellKnownOpenIdConfigPath)
 	if err != nil {
-		return eris.Wrap(err, "Issuer configuration could not be discovered")
+		return eris.Wrap(err, "OpenID configuration could not be discovered")
 	}
 
-	tokenEndpoint := resp.Result().(*OpenidConfiguration).TokenEndpoint
+	tokenEndpoint := openidConfiguration.Result().(*OpenidConfiguration).TokenEndpoint
 	if len(tokenEndpoint) == 0 {
 		return eris.New("Token endpoint was not provided by the issuer")
+	}
+
+	umaConfiguration, err := client.R().
+		SetResult(UmaConfiguration{}).
+		Get(opts.Issuer + wellKnownUmaConfigPath)
+	if err != nil {
+		return eris.Wrap(err, "UMA configuration could not be discovered")
+	}
+
+	resourceRegistrationEndpoint := umaConfiguration.Result().(*UmaConfiguration).ResourceRegistrationEndpoint
+	if len(resourceRegistrationEndpoint) == 0 {
+		return eris.New("Resource registration endpoint was not provided by the issuer")
+	}
+
+	discoveredEndpoints := DiscoveredEndpoints{
+		Tokens:               tokenEndpoint,
+		ResourceRegistration: resourceRegistrationEndpoint,
 	}
 
 	swagger, err := portalv1.GetSwagger()
@@ -80,7 +102,7 @@ func ListenAndServe(ctx context.Context, opts *Options) error {
 	swagger.Servers = nil
 
 	// Create an instance of our handler which satisfies the generated interface
-	keycloakHandler := NewStrictServerHandler(opts, client, tokenEndpoint)
+	keycloakHandler := NewStrictServerHandler(opts, client, discoveredEndpoints)
 	portalHandler := portalv1.NewStrictHandler(keycloakHandler, nil)
 
 	e := echo.New()

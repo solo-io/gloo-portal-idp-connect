@@ -40,7 +40,7 @@ curl -Ssm 10 --fail-with-body -H "Authorization: Bearer ${KEYCLOAK_TOKEN}" -H "C
   $KEYCLOAK_URL/admin/realms
 ```
 
-You'll need to provision a client in this realm that permits service accounts and has permissions to manipulate self-service clients. You can create such a client like this:
+You'll need to provision a client in this realm that permits service accounts and has permissions to manipulate self-service clients. For convenience, we'll also treat this client as a _resource server_ in which we will store API products as _resources_. You can create such a client like this:
 
 ```sh
 KEYCLOAK_CLIENT=solo-idp-connect
@@ -89,7 +89,7 @@ curl -Ssm 10 --fail-with-body -H "Authorization: Bearer ${KEYCLOAK_TOKEN}" -H "C
 The values of `KEYCLOAK_CLIENT` and `KEYCLOAK_SECRET` should be supplied to the Keycloak flavour of `idp-connect` at runtime (via `--client-id` and `--client-secret`) so that the service can obtain tokens and manipulate self-service clients on behalf of this management client. In the example used so far, you can start the service like this:
 
 ```sh
-./idp-connect keycloak --issuer ${KEYCLOAK_URL}/realms/${REALM} --client-id ${KEYCLOAK_CLIENT} --client-secret ${KEYCLOAK_SECRET} --resource-server resource-server
+./idp-connect keycloak --issuer ${KEYCLOAK_URL}/realms/${REALM} --client-id ${KEYCLOAK_CLIENT} --client-secret ${KEYCLOAK_SECRET}
  ```
 
 IDP Connect will use the token endpoint to obtain a token for the management client. You can replicate this for testing purposes like this:

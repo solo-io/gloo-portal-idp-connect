@@ -17,10 +17,14 @@ const (
 	issuer            = "https://keycloak.example.com/realms/my-org"
 	mgmtClientId      = "client-id"
 	mgmtClientSecret  = "client-secret"
-	fakeTokenEndpoint = issuer + "/protocol/openid-connect/token"
 	fakeAdminEndpoint = "https://keycloak.example.com/admin/realms/my-org"
 	resourceServer    = "access"
 )
+
+var endpoints = server.DiscoveredEndpoints{
+	Tokens:               issuer + "/protocol/openid-connect/token",
+	ResourceRegistration: issuer + "/authz/protection/resource_set",
+}
 
 var _ = Describe("Server", func() {
 	var (
@@ -38,10 +42,9 @@ var _ = Describe("Server", func() {
 			Issuer:           issuer,
 			MgmtClientId:     mgmtClientId,
 			MgmtClientSecret: mgmtClientSecret,
-			ResourceServer:   resourceServer,
 		},
 			restyClient,
-			fakeTokenEndpoint)
+			endpoints)
 	})
 
 	Context("Client", func() {
@@ -63,18 +66,18 @@ var _ = Describe("Server", func() {
 				}
 
 				dummyError := &server.KeycloakError{
-					Error: "not found",
+					Error:       "not found",
 					Description: "client doesn't exist",
 				}
 
 				newTokenResponder, _ := httpmock.NewJsonResponder(200, dummyToken)
-				httpmock.RegisterResponder("POST", fakeTokenEndpoint, newTokenResponder)
+				httpmock.RegisterResponder("POST", endpoints.Tokens, newTokenResponder)
 
 				newClientResponder, _ := httpmock.NewJsonResponder(200, dummyClient)
-				httpmock.RegisterResponder("POST", issuer + "/clients-registrations/default", newClientResponder)
+				httpmock.RegisterResponder("POST", issuer+"/clients-registrations/default", newClientResponder)
 
 				deleteClientResponder, _ := httpmock.NewJsonResponder(404, dummyError)
-				httpmock.RegisterResponder("DELETE", fakeAdminEndpoint + "/clients/" + clientName, deleteClientResponder)
+				httpmock.RegisterResponder("DELETE", fakeAdminEndpoint+"/clients/"+clientName, deleteClientResponder)
 			})
 
 			It("can create a client", func() {
@@ -128,10 +131,10 @@ var _ = Describe("Server", func() {
 				}
 
 				newTokenResponder, _ := httpmock.NewJsonResponder(200, dummyToken)
-				httpmock.RegisterResponder("POST", fakeTokenEndpoint, newTokenResponder)
+				httpmock.RegisterResponder("POST", endpoints.Tokens, newTokenResponder)
 
 				deleteClientResponder, _ := httpmock.NewJsonResponder(204, nil)
-				httpmock.RegisterResponder("DELETE", fakeAdminEndpoint + "/clients/" + genClientId, deleteClientResponder)
+				httpmock.RegisterResponder("DELETE", fakeAdminEndpoint+"/clients/"+genClientId, deleteClientResponder)
 			})
 
 			It("can delete the client", func() {

@@ -11,13 +11,12 @@ import (
 )
 
 type StrictServerHandler struct {
-	restClient       resty.Client
-	issuer           string
-	tokenEndpoint    string
-	adminRoot        string
-	mgmtClientId     string
-	mgmtClientSecret string
-	resourceServer   string
+	restClient          resty.Client
+	issuer              string
+	discoveredEndpoints DiscoveredEndpoints
+	adminRoot           string
+	mgmtClientId        string
+	mgmtClientSecret    string
 }
 
 type KeycloakToken struct {
@@ -35,7 +34,7 @@ type KeycloakError struct {
 	Description string `json:"error_description"`
 }
 
-func NewStrictServerHandler(opts *Options, restyClient *resty.Client, tokenEndpoint string) *StrictServerHandler {
+func NewStrictServerHandler(opts *Options, restyClient *resty.Client, discoveredEndpoints DiscoveredEndpoints) *StrictServerHandler {
 	r := regexp.MustCompile("^(https?:.*?)/realms/(.[^/]*)/?$")
 	adminRoot := r.ReplaceAllString(opts.Issuer, "$1/admin/realms/$2")
 
@@ -55,7 +54,7 @@ func NewStrictServerHandler(opts *Options, restyClient *resty.Client, tokenEndpo
 			}).
 			SetResult(&token).
 			SetError(&KeycloakError{}).
-			Post(tokenEndpoint)
+			Post(discoveredEndpoints.Tokens)
 
 		if err != nil {
 			return err
@@ -73,13 +72,12 @@ func NewStrictServerHandler(opts *Options, restyClient *resty.Client, tokenEndpo
 	})
 
 	return &StrictServerHandler{
-		restClient:       *restyClient,
-		issuer:           opts.Issuer,
-		tokenEndpoint:    tokenEndpoint,
-		adminRoot:        adminRoot,
-		mgmtClientId:     opts.MgmtClientId,
-		mgmtClientSecret: opts.MgmtClientSecret,
-		resourceServer:   opts.ResourceServer,
+		restClient:          *restyClient,
+		issuer:              opts.Issuer,
+		discoveredEndpoints: discoveredEndpoints,
+		adminRoot:           adminRoot,
+		mgmtClientId:        opts.MgmtClientId,
+		mgmtClientSecret:    opts.MgmtClientSecret,
 	}
 }
 
@@ -96,8 +94,8 @@ func (s *StrictServerHandler) CreateOAuthApplication(
 
 	resp, err := s.restClient.R().
 		SetBody(map[string]interface{}{
-			"clientId": request.Body.Name,
-			"name":     request.Body.Name,
+			"clientId":                     request.Body.Name,
+			"name":                         request.Body.Name,
 			"authorizationServicesEnabled": true,
 		}).
 		SetResult(&createdClient).

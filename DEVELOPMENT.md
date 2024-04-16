@@ -33,6 +33,8 @@ KEYCLOAK_TOKEN=$(curl -Ssm 10 --fail-with-body \
 Create the new realm:
 
 ```sh
+REALM=my-realm
+
 curl -Ssm 10 --fail-with-body -H "Authorization: Bearer ${KEYCLOAK_TOKEN}" -H "Content-Type: application/json" \
   -d '{ "realm": "'${REALM}'", "enabled": true }' \
   $KEYCLOAK_URL/admin/realms

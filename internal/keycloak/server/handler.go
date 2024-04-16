@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 	"regexp"
 
 	resty "github.com/go-resty/resty/v2"
@@ -38,6 +39,39 @@ func NewStrictServerHandler(opts *Options, restyClient *resty.Client, tokenEndpo
 	r := regexp.MustCompile("^(https?:.*?)/realms/(.[^/]*)/?$")
 	adminRoot := r.ReplaceAllString(opts.Issuer, "$1/admin/realms/$2")
 
+	restyClient.OnBeforeRequest(func(c *resty.Client, r *resty.Request) error {
+		// If we already have user info, assume this is a request to fetch a token
+		if r.UserInfo != nil {
+			return nil
+		}
+
+		var token KeycloakToken
+
+		tokenResponse, err := c.R().
+			SetBasicAuth(opts.MgmtClientId, opts.MgmtClientSecret).
+			SetFormData(map[string]string{
+				"grant_type": "urn:ietf:params:oauth:grant-type:uma-ticket",
+				"audience":   opts.MgmtClientId,
+			}).
+			SetResult(&token).
+			SetError(&KeycloakError{}).
+			Post(tokenEndpoint)
+
+		if err != nil {
+			return err
+		}
+
+		if tokenResponse.IsError() {
+			error := tokenResponse.Error().(*KeycloakError)
+			return fmt.Errorf("could not obtain token for client %s: [%s] %s", opts.MgmtClientId, error.Error, error.Description)
+		}
+
+		r.SetAuthToken(token.AccessToken)
+		r.SetError(&KeycloakError{})
+
+		return nil
+	})
+
 	return &StrictServerHandler{
 		restClient:       *restyClient,
 		issuer:           opts.Issuer,
@@ -58,23 +92,15 @@ func (s *StrictServerHandler) CreateOAuthApplication(
 		return portalv1.CreateOAuthApplication400JSONResponse(newPortal400Error("client name is required")), nil
 	}
 
-	token, portalErr := getToken(s)
-
-	if portalErr != nil {
-		return portalv1.CreateOAuthApplication500JSONResponse(*portalErr), nil
-	}
-
 	var createdClient CreatedClient
 
 	resp, err := s.restClient.R().
-		SetAuthToken(token.AccessToken).
 		SetBody(map[string]interface{}{
 			"clientId": request.Body.Name,
 			"name":     request.Body.Name,
 			"authorizationServicesEnabled": true,
 		}).
 		SetResult(&createdClient).
-		SetError(&KeycloakError{}).
 		Post(s.issuer + "/clients-registrations/default")
 
 	if err != nil || resp.IsError() {
@@ -93,16 +119,7 @@ func (s *StrictServerHandler) DeleteApplication(
 	ctx context.Context,
 	request portalv1.DeleteApplicationRequestObject,
 ) (portalv1.DeleteApplicationResponseObject, error) {
-
-	token, portalErr := getToken(s)
-
-	if portalErr != nil {
-		return portalv1.DeleteApplication500JSONResponse(*portalErr), nil
-	}
-
 	resp, err := s.restClient.R().
-		SetAuthToken(token.AccessToken).
-		SetError(&KeycloakError{}).
 		Delete(s.adminRoot + "/clients/" + request.Id)
 
 	if err != nil || resp.IsError() {
@@ -117,7 +134,7 @@ func (s *StrictServerHandler) DeleteApplication(
 	return portalv1.DeleteApplication204Response{}, nil
 }
 
-// UpdateAppAPIProducts updates scopes for a client in Keycloak.
+// UpdateAppAPIProducts updates resources for a client in Keycloak.
 func (s *StrictServerHandler) UpdateAppAPIProducts(
 	ctx context.Context,
 	request portalv1.UpdateAppAPIProductsRequestObject,
@@ -141,7 +158,7 @@ func (s *StrictServerHandler) UpdateAppAPIProducts(
 	return portalv1.UpdateAppAPIProducts204Response{}, nil
 }
 
-// CreateAPIProduct creates scopes in Keycloak
+// CreateAPIProduct creates resources in Keycloak
 func (s *StrictServerHandler) CreateAPIProduct(
 	ctx context.Context,
 	request portalv1.CreateAPIProductRequestObject,
@@ -160,7 +177,7 @@ func (s *StrictServerHandler) CreateAPIProduct(
 	return portalv1.CreateAPIProduct201Response{}, nil
 }
 
-// DeleteAPIProduct deletes scopes in Keycloak
+// DeleteAPIProduct deletes resources in Keycloak
 func (s *StrictServerHandler) DeleteAPIProduct(
 	ctx context.Context,
 	request portalv1.DeleteAPIProductRequestObject,
@@ -174,27 +191,6 @@ func (s *StrictServerHandler) DeleteAPIProduct(
 	}
 
 	return portalv1.DeleteAPIProduct204Response{}, nil
-}
-
-func getToken(s *StrictServerHandler) (*KeycloakToken, *portalv1.Error) {
-	var token KeycloakToken
-
-	tokenResponse, err := s.restClient.R().
-		SetBasicAuth(s.mgmtClientId, s.mgmtClientSecret).
-		SetFormData(map[string]string{
-			"grant_type": "urn:ietf:params:oauth:grant-type:uma-ticket",
-			"audience":   s.mgmtClientId,
-		}).
-		SetResult(&token).
-		SetError(&KeycloakError{}).
-		Post(s.tokenEndpoint)
-
-	if err != nil || tokenResponse.IsError() {
-		portalError := unwrapError(tokenResponse, err)
-		return nil, &portalError
-	}
-
-	return &token, nil
 }
 
 func unwrapError(resp *resty.Response, err error) portalv1.Error {

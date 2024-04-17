@@ -17,10 +17,7 @@ import (
 	portalv1 "github.com/solo-io/gloo-portal-idp-connect/pkg/api/v1"
 )
 
-const (
-	wellKnownOpenIdConfigPath = "/.well-known/openid-configuration"
-	wellKnownUmaConfigPath    = "/.well-known/uma2-configuration"
-)
+const wellKnownUmaConfigPath = "/.well-known/uma2-configuration"
 
 type Options struct {
 	Port             string
@@ -29,17 +26,10 @@ type Options struct {
 	MgmtClientSecret string
 }
 
-type OpenidConfiguration struct {
-	TokenEndpoint string `json:"token_endpoint"`
-}
-
-type UmaConfiguration struct {
-	ResourceRegistrationEndpoint string `json:"resource_registration_endpoint"`
-}
-
 type DiscoveredEndpoints struct {
-	Tokens               string
+	Policy               string
 	ResourceRegistration string
+	Tokens               string
 }
 
 func (o *Options) AddToFlags(flag *pflag.FlagSet) {
@@ -57,23 +47,17 @@ func (o *Options) Validate() error {
 }
 
 func ListenAndServe(ctx context.Context, opts *Options) error {
+	type UmaConfiguration struct {
+		PolicyEndpoint               string `json:"policy_endpoint"`
+		ResourceRegistrationEndpoint string `json:"resource_registration_endpoint"`
+		TokenEndpoint                string `json:"token_endpoint"`
+	}
+
 	if err := opts.Validate(); err != nil {
 		return err
 	}
 
 	client := resty.New()
-
-	openidConfiguration, err := client.R().
-		SetResult(OpenidConfiguration{}).
-		Get(opts.Issuer + wellKnownOpenIdConfigPath)
-	if err != nil {
-		return eris.Wrap(err, "OpenID configuration could not be discovered")
-	}
-
-	tokenEndpoint := openidConfiguration.Result().(*OpenidConfiguration).TokenEndpoint
-	if len(tokenEndpoint) == 0 {
-		return eris.New("Token endpoint was not provided by the issuer")
-	}
 
 	umaConfiguration, err := client.R().
 		SetResult(UmaConfiguration{}).
@@ -82,14 +66,25 @@ func ListenAndServe(ctx context.Context, opts *Options) error {
 		return eris.Wrap(err, "UMA configuration could not be discovered")
 	}
 
+	policyEndpoint := umaConfiguration.Result().(*UmaConfiguration).PolicyEndpoint
+	if len(policyEndpoint) == 0 {
+		return eris.New("Policy endpoint was not provided by the issuer")
+	}
+
 	resourceRegistrationEndpoint := umaConfiguration.Result().(*UmaConfiguration).ResourceRegistrationEndpoint
 	if len(resourceRegistrationEndpoint) == 0 {
 		return eris.New("Resource registration endpoint was not provided by the issuer")
 	}
 
+	tokenEndpoint := umaConfiguration.Result().(*UmaConfiguration).TokenEndpoint
+	if len(tokenEndpoint) == 0 {
+		return eris.New("Token endpoint was not provided by the issuer")
+	}
+
 	discoveredEndpoints := DiscoveredEndpoints{
-		Tokens:               tokenEndpoint,
+		Policy:               policyEndpoint,
 		ResourceRegistration: resourceRegistrationEndpoint,
+		Tokens:               tokenEndpoint,
 	}
 
 	swagger, err := portalv1.GetSwagger()

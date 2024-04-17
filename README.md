@@ -14,11 +14,17 @@ Here is a list of Identity Providers that we currently support:
 
 ### Keycloak
 
-The following requirements must be met for the Keycloak IDP Connect service to work with a given Keycloak instance:
+A Keycloak client must be created for the Keycloak IDP Connect service to use. Provide the ID and secret of this client in the `--client-id` and `--client-secret` IDP Connect arguments respectively. This client must meet some requirements:
 
-* *Client credentials:* a client must be registered in your Keycloak realm, and the client must have the `manage-client` permission needed for IDP Connect to be able to manipulate self-service clients. Provide the ID and secret of this client in the `--client-id` and `--client-secret` arguments respectively.
+* The client must have the `manage-client` permission needed for IDP Connect to be able to manipulate self-service clients.
+* **Authorization** must be enabled on this client, as this client will also act as an OAuth2 [resource server](https://www.keycloak.org/docs/latest/authorization_services/index.html#_resource_server_overview).
+* **Service accounts roles** (or OAuth2 _client credentials_) must be enabled, to allow IDP Connect to use this client directly to manage other clients and resources.
 
-Please see <https://www.keycloak.org/docs/latest/securing_apps/#_client_registration> for more details of Keycloak's support for client registration.
+#### Related documentation
+
+* Keycloak's support for client registration: <https://www.keycloak.org/docs/latest/securing_apps/#_client_registration>
+* Resource authorization in Keycloak: <https://www.keycloak.org/docs/latest/authorization_services/>
+* IDP Connect will manipulate resources using Keycloak's Authorization Services, which is based on [User-Managed Access (UMA)](https://docs.kantarainitiative.org/uma/rec-uma-core.html)
 
 ## Production
 
@@ -26,5 +32,6 @@ IDP Connect provides a straightforward and easy-to-setup way of configuring cred
  we expect that the needs of your system are and will evolve beyond the scope of this simple implementation. The SPI we provide provides a hook on top of which you can build a customizable system to service any number of more advanced use cases.
 
 TODO: Add information for devs
+
 * Install tools
 * (Potential) Allow for AWS IAM Roles for service accounts as cognito auth method.

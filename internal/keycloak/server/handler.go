@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"regexp"
 	"slices"
+	"time"
 
 	resty "github.com/go-resty/resty/v2"
 	portalv1 "github.com/solo-io/gloo-portal-idp-connect/pkg/api/v1"
@@ -30,6 +31,11 @@ type KeycloakClient struct {
 	Secret string `json:"secret"`
 }
 
+type Permission struct {
+	Id      string   `json:"id"`
+	Clients []string `json:"clients"`
+}
+
 type KeycloakError struct {
 	Error       string `json:"error"`
 	Description string `json:"error_description"`
@@ -39,31 +45,37 @@ func NewStrictServerHandler(opts *Options, restyClient *resty.Client, discovered
 	r := regexp.MustCompile("^(https?:.*?)/realms/(.[^/]*)/?$")
 	adminRoot := r.ReplaceAllString(opts.Issuer, "$1/admin/realms/$2")
 
+	var token *KeycloakToken
+	var tokenRefreshed time.Time
+
 	restyClient.OnBeforeRequest(func(c *resty.Client, r *resty.Request) error {
 		// If we already have user info, assume this is a request to fetch a token
 		if r.UserInfo != nil {
 			return nil
 		}
 
-		var token KeycloakToken
+		// Reuse the last token if we got it less than a minute ago
+		if token == nil || time.Since(tokenRefreshed).Seconds() > 60 {
+			tokenResponse, err := c.R().
+				SetBasicAuth(opts.MgmtClientId, opts.MgmtClientSecret).
+				SetFormData(map[string]string{
+					"grant_type": "urn:ietf:params:oauth:grant-type:uma-ticket",
+					"audience":   opts.MgmtClientId,
+				}).
+				SetResult(&token).
+				SetError(&KeycloakError{}).
+				Post(discoveredEndpoints.Tokens)
 
-		tokenResponse, err := c.R().
-			SetBasicAuth(opts.MgmtClientId, opts.MgmtClientSecret).
-			SetFormData(map[string]string{
-				"grant_type": "urn:ietf:params:oauth:grant-type:uma-ticket",
-				"audience":   opts.MgmtClientId,
-			}).
-			SetResult(&token).
-			SetError(&KeycloakError{}).
-			Post(discoveredEndpoints.Tokens)
+			tokenRefreshed = time.Now()
 
-		if err != nil {
-			return err
-		}
+			if err != nil {
+				return err
+			}
 
-		if tokenResponse.IsError() {
-			error := tokenResponse.Error().(*KeycloakError)
-			return fmt.Errorf("could not obtain token for client %s: [%s] %s", opts.MgmtClientId, error.Error, error.Description)
+			if tokenResponse.IsError() {
+				error := tokenResponse.Error().(*KeycloakError)
+				return fmt.Errorf("could not obtain token for client %s: [%s] %s", opts.MgmtClientId, error.Error, error.Description)
+			}
 		}
 
 		r.SetAuthToken(token.AccessToken)
@@ -224,11 +236,6 @@ func (s *StrictServerHandler) UpdateAppAPIProducts(
 	}
 
 	// Get all the existing permissions, so we can filter by those that are just for the given client
-	type Permission struct {
-		Id      string   `json:"id"`
-		Clients []string `json:"clients"`
-	}
-
 	var allPermissions []Permission
 	getPermissions, err := s.restClient.R().
 		SetResult(&allPermissions).

@@ -21,6 +21,5 @@ gloo-portal-idp-connect args command
   - --issuer={{ .Values.keycloak.realm }}
   - --client-id={{ .Values.keycloak.mgmtClientId }}
   - --client-secret={{ .Values.keycloak.mgmtClientSecret }}
-  - --resource-server={{ .Values.keycloak.resourceServer }}
 {{- end }}
 {{- end }}

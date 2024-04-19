@@ -44,31 +44,48 @@ The Access token can be used to authorize requests via ext-auth. The most conven
 
 ### IDP Configuration
 
-When an application is created in Gloo Portal, the SPI will be called to create the client representation in the SPI. This will result in a new client created in the Keycloak realm, with an auto-generated client ID and secret returned to the caller.
+When an application is created in Gloo Portal, the SPI will be called to create the client representation in the SPI. This will result in a new _client_ created in the Keycloak realm, with an auto-generated client ID and secret returned to the caller.
 
 > **Note:** Clients created by the SPI use Keycloak's default settings, and no assumptions are made about how the client will manage and distribute tokens. It is left to the customer to decide how the created clients should be configured.
 
 When an API Product is created in Gloo Portal, the SPI will be called to create the representation in the IDP. For Keycloak, this would most likely be represented as a _resource_ managed by the _resource server_ client. For convenience, the default implementation assumes that the client being used by the SPI to manage applications is also the resource server that will manage API products.
 
-Once at least one Application (client) and one API Product (resource) is in the system, you can begin to authorize API Products for particular applications. This can be represented in Keycloak as a permission granted on the API product resource to the client application.
+With at least one Application (client) and one API Product (resource) registered in Keycloak, you can begin to authorize API Products for particular applications. This can be represented in Keycloak as a _permission_ granted on the API product resource to the client application.
 
-Once the API Product has been given access to the application, the application can request a permission token from Keycloak's token endpoint.
+Once the application has been given access to the API Product, the application can obtain a Requesting Party Token (RPT) from Keycloak's token endpoint, or the policy enforcement point (e.g. Gloo ext-auth) can interrogate Keycloak directly to validate that the user and application are authorised to the API Product.
 
 ### Data Path Authorization
 
-The client will need to use Keycloak's token endpoint to obtain a Requesting Party Token (RPT) on the user's behalf. _The resource server client ID (i.e. the client ID used by the SPI itself, must be specified as the `audience` in the token request for the correct permissions to be evaluated._ The access token returned will contain a new `authorization` claim with permissions for the permitted API products:
+Policy enforcement points (such as Gloo ext-auth) have at least two options for checking authorised access to protected API Products with the representations described above:
+
+* Validating a Requesting Party Token (RPT) obtained by the client, possibly via a [UMA Grant Flow](https://www.keycloak.org/docs/latest/authorization_services/#_service_uma_authorization_process)
+* Directly checking permissions in Keycloak
+
+In either case, requests can be authorised via Gloo ext-auth. The most convenient method is to use OPA in order to match permissions against the `apiProductId` of the API Product. See [Configuring Gloo Platform](./configuring-gloo-platform.md) for an example of how to use the access token to authorize requests to your API Products.
+
+#### Requesting Party Token (RPT)
+
+Whether following the UMA Grant Flow or otherwise, the client will need to use Keycloak's token endpoint to obtain a RPT on the user's behalf.
+
+> **Note:** The resource server client ID (i.e. the client ID used by the SPI itself) must be specified as the `audience` in the token request for the correct permissions to be evaluated. This will be automatic if an RPT is obtained using a permission ticket in the UMA Grant Flow.
+
+The access token returned will contain a new `authorization` claim with permissions for the permitted API products:
 
 ```json
 "authorization": {
   "permissions": [
     {
       "rsid": "aa6edf59-a4b7-4532-b6b1-a5b423da7809",
-      "rsname": "bookinfo"
+      "rsname": "tracks-rest-api"
     }
   ]
 }
 ```
 
+Requests to the API Product can then be (re-)tried using this new access token.
+
 See <https://www.keycloak.org/docs/latest/authorization_services/index.html#_service_obtaining_permissions> for more details on obtaining an RPT.
 
-The RPT can be used to authorize requests via ext-auth. The most convenient method would be to use OPA in order to match the token's permissions against the `apiProductId` of the API Product. See [Configuring Gloo Platform](./configuring-gloo-platform.md) for more information on how to use the access token to authorize requests to your API Products.
+## Direct permission check
+
+Rather than having the client obtain an RPT with the authorised permissions, the policy enforcement point can request a decision from Keycloak based on the access token presented by the client. This approach is useful when clients do not support the UMA Grant Flow but has the downside of introducing an HTTP call to Keycloak as part of the authorisation process.

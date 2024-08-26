@@ -48,3 +48,4 @@ The only caveat is that it is published alongside the release images, and don't 
 - **Automated Cleanup**: We should add scheduled workflows or something to automatically clean up old dev released images and Helm charts to manage storage and maintain a clean registry.
   - This could be as easy as having a weekly workflow that removes anything with the `dev-` prefix that is older than a certain date for images and charts.
 - **Updated repositories**: Currently the repositories where we publish reference `gloo-mesh`, but should be updated to `gloo-ee` as this is part of the Gloo Gateway product.
+- **D.R.Y.**: There is some duplication in the release workflows (dev + official) that could be refactored into a shared workflow to reduce maintenance overhead. Similar to how the CI workflows run in our [solo-io/solo-projects](https://github.com/solo-io/solo-projects/tree/4efea67fb02f573d2f3d7fcfdf584e7c55e752f6/.github/workflows) repo.

@@ -41,7 +41,7 @@ var _ = Describe("E2e", Ordered, func() {
 			Url:     "idp-connect/applications/oauth2",
 			Cluster: env,
 			Method:  "POST",
-			Data:    fmt.Sprintf(`{"id": "%s"}`, clientId),
+			Data:    fmt.Sprintf(`{"id": "%s"}`, internalClientId),
 			App:     "curl",
 			Headers: []string{"Content-Type: application/json"},
 		}

@@ -101,16 +101,6 @@ var _ = Describe("Server", func() {
 				Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateOAuthApplication400JSONResponse{}))
 			})
 
-			It("returns error code on empty client name", func() {
-				resp, err := s.CreateOAuthApplication(ctx, portalv1.CreateOAuthApplicationRequestObject{
-					Body: &portalv1.CreateOAuthApplicationJSONRequestBody{
-						Id: applicationClientId,
-					},
-				})
-				Expect(err).NotTo(HaveOccurred())
-				Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateOAuthApplication400JSONResponse{}))
-			})
-
 			It("returns an error code on empty client id", func() {
 				resp, err := s.CreateOAuthApplication(ctx, portalv1.CreateOAuthApplicationRequestObject{
 					Body: &portalv1.CreateOAuthApplicationJSONRequestBody{

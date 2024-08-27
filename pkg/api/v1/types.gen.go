@@ -30,8 +30,7 @@ type CreateAPIProductJSONBody struct {
 
 // CreateOAuthApplicationJSONBody defines parameters for CreateOAuthApplication.
 type CreateOAuthApplicationJSONBody struct {
-	Id   string `json:"id"`
-	Name string `json:"name"`
+	Id string `json:"id"`
 }
 
 // UpdateAppAPIProductsJSONBody defines parameters for UpdateAppAPIProducts.

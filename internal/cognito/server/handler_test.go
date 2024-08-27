@@ -82,17 +82,15 @@ var _ = Describe("Server", func() {
 				)
 			})
 			It("can create a client", func() {
-				client := "test-client"
 				resp, err := s.CreateOAuthApplication(ctx, portalv1.CreateOAuthApplicationRequestObject{
 					Body: &portalv1.CreateOAuthApplicationJSONRequestBody{
-						Name: client,
-						Id:   applicationClientId,
+						Id: applicationClientId,
 					},
 				})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateOAuthApplication201JSONResponse{}))
 				resp200 := resp.(portalv1.CreateOAuthApplication201JSONResponse)
-				Expect(*resp200.ClientName).To(Equal(client))
+				Expect(*resp200.ClientName).To(Equal(applicationClientId))
 				Expect(resp200.ClientId).NotTo(BeNil())
 				Expect(resp200.ClientSecret).NotTo(BeNil())
 			})
@@ -106,8 +104,7 @@ var _ = Describe("Server", func() {
 			It("returns error code on empty client name", func() {
 				resp, err := s.CreateOAuthApplication(ctx, portalv1.CreateOAuthApplicationRequestObject{
 					Body: &portalv1.CreateOAuthApplicationJSONRequestBody{
-						Name: "",
-						Id:   applicationClientId,
+						Id: applicationClientId,
 					},
 				})
 				Expect(err).NotTo(HaveOccurred())
@@ -117,8 +114,7 @@ var _ = Describe("Server", func() {
 			It("returns an error code on empty client id", func() {
 				resp, err := s.CreateOAuthApplication(ctx, portalv1.CreateOAuthApplicationRequestObject{
 					Body: &portalv1.CreateOAuthApplicationJSONRequestBody{
-						Name: "test-client",
-						Id:   "",
+						Id: "",
 					},
 				})
 				Expect(err).NotTo(HaveOccurred())

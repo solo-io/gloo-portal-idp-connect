@@ -22,7 +22,6 @@ var _ = Describe("Server", func() {
 
 		fakeAdminEndpoint = "https://keycloak.example.com/admin/realms/my-org"
 
-		applicationName         = "test-client"
 		applicationClientId     = "client-internal-id"
 		applicationClientSecret = "client-secret"
 	)
@@ -38,7 +37,7 @@ var _ = Describe("Server", func() {
 
 		dummyClient = server.KeycloakClient{
 			Id:     applicationClientId,
-			Name:   applicationName,
+			Name:   applicationClientId,
 			Secret: applicationClientSecret,
 		}
 	)
@@ -80,14 +79,13 @@ var _ = Describe("Server", func() {
 			It("can create a client", func() {
 				resp, err := s.CreateOAuthApplication(ctx, portalv1.CreateOAuthApplicationRequestObject{
 					Body: &portalv1.CreateOAuthApplicationJSONRequestBody{
-						Name: applicationName,
-						Id:   applicationClientId,
+						Id: applicationClientId,
 					},
 				})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateOAuthApplication201JSONResponse{}))
 				resp200 := resp.(portalv1.CreateOAuthApplication201JSONResponse)
-				Expect(*resp200.ClientName).To(Equal(applicationName))
+				Expect(*resp200.ClientName).To(Equal(applicationClientId))
 				Expect(resp200.ClientId).To(Equal(applicationClientId))
 				Expect(resp200.ClientSecret).To(Equal(applicationClientSecret))
 			})
@@ -98,22 +96,10 @@ var _ = Describe("Server", func() {
 				Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateOAuthApplication400JSONResponse{}))
 			})
 
-			It("returns error code on empty client name", func() {
-				resp, err := s.CreateOAuthApplication(ctx, portalv1.CreateOAuthApplicationRequestObject{
-					Body: &portalv1.CreateOAuthApplicationJSONRequestBody{
-						Name: "",
-						Id:   applicationClientId,
-					},
-				})
-				Expect(err).NotTo(HaveOccurred())
-				Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateOAuthApplication400JSONResponse{}))
-			})
-
 			It("returns error code on empty client id", func() {
 				resp, err := s.CreateOAuthApplication(ctx, portalv1.CreateOAuthApplicationRequestObject{
 					Body: &portalv1.CreateOAuthApplicationJSONRequestBody{
-						Name: applicationName,
-						Id:   "",
+						Id: "",
 					},
 				})
 				Expect(err).NotTo(HaveOccurred())
@@ -134,7 +120,7 @@ var _ = Describe("Server", func() {
 		When("client exists", func() {
 			BeforeEach(func() {
 				getClientIdResponder, _ := httpmock.NewJsonResponder(200, [1]server.KeycloakClient{dummyClient})
-				httpmock.RegisterResponder("GET", fakeAdminEndpoint+"/clients?clientId="+applicationName, getClientIdResponder)
+				httpmock.RegisterResponder("GET", fakeAdminEndpoint+"/clients?clientId="+applicationClientId, getClientIdResponder)
 
 				deleteClientResponder, _ := httpmock.NewJsonResponder(204, nil)
 				httpmock.RegisterResponder("DELETE", fakeAdminEndpoint+"/clients/"+applicationClientId, deleteClientResponder)
@@ -142,7 +128,7 @@ var _ = Describe("Server", func() {
 
 			It("can delete the client", func() {
 				resp, err := s.DeleteApplication(ctx, portalv1.DeleteApplicationRequestObject{
-					Id: applicationName,
+					Id: applicationClientId,
 				})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteApplication204Response{}))
@@ -238,12 +224,12 @@ var _ = Describe("Server", func() {
 
 			BeforeEach(func() {
 				getClientResponder, _ := httpmock.NewJsonResponder(200, []string{})
-				httpmock.RegisterResponder("GET", fakeAdminEndpoint+"/clients?clientId="+applicationName, getClientResponder)
+				httpmock.RegisterResponder("GET", fakeAdminEndpoint+"/clients?clientId="+applicationClientId, getClientResponder)
 			})
 
 			It("returns not found on update", func() {
 				resp, err := s.UpdateAppAPIProducts(ctx, portalv1.UpdateAppAPIProductsRequestObject{
-					Id: applicationName,
+					Id: applicationClientId,
 					Body: &portalv1.UpdateAppAPIProductsJSONRequestBody{
 						ApiProducts: apiProducts,
 					},
@@ -259,7 +245,7 @@ var _ = Describe("Server", func() {
 
 			BeforeEach(func() {
 				getClientResponder, _ := httpmock.NewJsonResponder(200, [1]server.KeycloakClient{dummyClient})
-				httpmock.RegisterResponder("GET", fakeAdminEndpoint+"/clients?clientId="+applicationName, getClientResponder)
+				httpmock.RegisterResponder("GET", fakeAdminEndpoint+"/clients?clientId="+applicationClientId, getClientResponder)
 
 				resource1IdLookupResponder, _ := httpmock.NewJsonResponder(200, []string{resource1Id})
 				httpmock.RegisterResponder("GET", endpoints.ResourceRegistration+"?exactName=true&name=api-product-1", resource1IdLookupResponder)
@@ -269,7 +255,7 @@ var _ = Describe("Server", func() {
 
 				getPermissionResponder, _ := httpmock.NewJsonResponder(200, []server.Permission{{
 					Id:      existingPermissionId,
-					Clients: []string{applicationName},
+					Clients: []string{applicationClientId},
 				}})
 				httpmock.RegisterResponder("GET", endpoints.Policy, getPermissionResponder)
 
@@ -285,7 +271,7 @@ var _ = Describe("Server", func() {
 
 			It("can update client API Products", func() {
 				resp, err := s.UpdateAppAPIProducts(ctx, portalv1.UpdateAppAPIProductsRequestObject{
-					Id: applicationName,
+					Id: applicationClientId,
 					Body: &portalv1.UpdateAppAPIProductsJSONRequestBody{
 						ApiProducts: apiProducts,
 					},

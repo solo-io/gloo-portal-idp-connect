@@ -96,11 +96,11 @@ func NewStrictServerHandler(opts *Options, restyClient *resty.Client, discovered
 
 // CreateOAuthApplication creates a client in Keycloak
 func (s *StrictServerHandler) CreateOAuthApplication(
-	ctx context.Context,
+	_ context.Context,
 	request portalv1.CreateOAuthApplicationRequestObject,
 ) (portalv1.CreateOAuthApplicationResponseObject, error) {
-	if request.Body == nil || len(request.Body.Name) == 0 || len(request.Body.Id) == 0 {
-		return portalv1.CreateOAuthApplication400JSONResponse(newPortal400Error("client name and unique id is required")), nil
+	if request.Body == nil || len(request.Body.Id) == 0 {
+		return portalv1.CreateOAuthApplication400JSONResponse(newPortal400Error("unique id is required")), nil
 	}
 
 	var createdClient KeycloakClient
@@ -108,7 +108,7 @@ func (s *StrictServerHandler) CreateOAuthApplication(
 	resp, err := s.restClient.R().
 		SetBody(map[string]interface{}{
 			"clientId": request.Body.Id,
-			"name":     request.Body.Name,
+			"name":     request.Body.Id,
 		}).
 		SetResult(&createdClient).
 		Post(s.issuer + "/clients-registrations/default")
@@ -126,7 +126,7 @@ func (s *StrictServerHandler) CreateOAuthApplication(
 
 // DeleteApplication deletes a client by ID.
 func (s *StrictServerHandler) DeleteApplication(
-	ctx context.Context,
+	_ context.Context,
 	request portalv1.DeleteApplicationRequestObject,
 ) (portalv1.DeleteApplicationResponseObject, error) {
 	if len(request.Id) == 0 {

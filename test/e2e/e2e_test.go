@@ -29,9 +29,10 @@ var _ = Describe("E2e", Ordered, func() {
 		// Unique scope string to make sure there are no conflicts between runs of e2e tests and so that,
 		// should things go wrong, we can identify when the scope was created.
 		testApiProduct = fmt.Sprintf("e2e-test-api-product-%s", nowString)
-		// Unique name dated with current time so that we can get a gauge on the client we are creating when,
-		// and to avoid conflicts. This will also be the client name created in AWS Cognito.
-		appName = fmt.Sprintf("e2e-test-client-%s", nowString)
+		appName = "e2e-test-client"
+		// Unique ID dated with current time so that we can get a gauge on the client we are creating when,
+		// and to avoid conflicts.
+		clientId = fmt.Sprintf("id-%s", nowString)
 	})
 
 	It("can can create client", func() {
@@ -39,7 +40,7 @@ var _ = Describe("E2e", Ordered, func() {
 			Url:     "idp-connect/applications/oauth2",
 			Cluster: env,
 			Method:  "POST",
-			Data:    fmt.Sprintf(`{"name": "%s"}`, appName),
+			Data:    fmt.Sprintf(`{"name": "%s", "id": "%s"}`, appName, clientId),
 			App:     "curl",
 			Headers: []string{"Content-Type: application/json"},
 		}
@@ -52,8 +53,7 @@ var _ = Describe("E2e", Ordered, func() {
 		Expect(json.Unmarshal([]byte(out), &createObj)).To(Succeed())
 		Expect(createObj.ClientName).ToNot(BeNil())
 		Expect(*createObj.ClientName).To(Equal(appName))
-		Expect(createObj.ClientId).ToNot(BeNil())
-		clientId = *createObj.ClientId
+		Expect(createObj.ClientId).To(Equal(clientId))
 	})
 
 	It("can create API Products", func() {

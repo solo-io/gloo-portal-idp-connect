@@ -6,36 +6,35 @@ package mock_server
 
 import (
 	context "context"
-	reflect "reflect"
-
 	cognitoidentityprovider "github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	gomock "github.com/golang/mock/gomock"
+	reflect "reflect"
 )
 
-// MockCognitoClient is a mock of CognitoClient interface.
+// MockCognitoClient is a mock of CognitoClient interface
 type MockCognitoClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockCognitoClientMockRecorder
 }
 
-// MockCognitoClientMockRecorder is the mock recorder for MockCognitoClient.
+// MockCognitoClientMockRecorder is the mock recorder for MockCognitoClient
 type MockCognitoClientMockRecorder struct {
 	mock *MockCognitoClient
 }
 
-// NewMockCognitoClient creates a new mock instance.
+// NewMockCognitoClient creates a new mock instance
 func NewMockCognitoClient(ctrl *gomock.Controller) *MockCognitoClient {
 	mock := &MockCognitoClient{ctrl: ctrl}
 	mock.recorder = &MockCognitoClientMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use.
+// EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockCognitoClient) EXPECT() *MockCognitoClientMockRecorder {
 	return m.recorder
 }
 
-// CreateResourceServer mocks base method.
+// CreateResourceServer mocks base method
 func (m *MockCognitoClient) CreateResourceServer(arg0 context.Context, arg1 *cognitoidentityprovider.CreateResourceServerInput, arg2 ...func(*cognitoidentityprovider.Options)) (*cognitoidentityprovider.CreateResourceServerOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -48,14 +47,14 @@ func (m *MockCognitoClient) CreateResourceServer(arg0 context.Context, arg1 *cog
 	return ret0, ret1
 }
 
-// CreateResourceServer indicates an expected call of CreateResourceServer.
+// CreateResourceServer indicates an expected call of CreateResourceServer
 func (mr *MockCognitoClientMockRecorder) CreateResourceServer(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateResourceServer", reflect.TypeOf((*MockCognitoClient)(nil).CreateResourceServer), varargs...)
 }
 
-// CreateUserPoolClient mocks base method.
+// CreateUserPoolClient mocks base method
 func (m *MockCognitoClient) CreateUserPoolClient(arg0 context.Context, arg1 *cognitoidentityprovider.CreateUserPoolClientInput, arg2 ...func(*cognitoidentityprovider.Options)) (*cognitoidentityprovider.CreateUserPoolClientOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -68,14 +67,14 @@ func (m *MockCognitoClient) CreateUserPoolClient(arg0 context.Context, arg1 *cog
 	return ret0, ret1
 }
 
-// CreateUserPoolClient indicates an expected call of CreateUserPoolClient.
+// CreateUserPoolClient indicates an expected call of CreateUserPoolClient
 func (mr *MockCognitoClientMockRecorder) CreateUserPoolClient(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUserPoolClient", reflect.TypeOf((*MockCognitoClient)(nil).CreateUserPoolClient), varargs...)
 }
 
-// DeleteUserPoolClient mocks base method.
+// DeleteUserPoolClient mocks base method
 func (m *MockCognitoClient) DeleteUserPoolClient(arg0 context.Context, arg1 *cognitoidentityprovider.DeleteUserPoolClientInput, arg2 ...func(*cognitoidentityprovider.Options)) (*cognitoidentityprovider.DeleteUserPoolClientOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -88,14 +87,14 @@ func (m *MockCognitoClient) DeleteUserPoolClient(arg0 context.Context, arg1 *cog
 	return ret0, ret1
 }
 
-// DeleteUserPoolClient indicates an expected call of DeleteUserPoolClient.
+// DeleteUserPoolClient indicates an expected call of DeleteUserPoolClient
 func (mr *MockCognitoClientMockRecorder) DeleteUserPoolClient(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUserPoolClient", reflect.TypeOf((*MockCognitoClient)(nil).DeleteUserPoolClient), varargs...)
 }
 
-// DescribeResourceServer mocks base method.
+// DescribeResourceServer mocks base method
 func (m *MockCognitoClient) DescribeResourceServer(arg0 context.Context, arg1 *cognitoidentityprovider.DescribeResourceServerInput, arg2 ...func(*cognitoidentityprovider.Options)) (*cognitoidentityprovider.DescribeResourceServerOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -108,14 +107,14 @@ func (m *MockCognitoClient) DescribeResourceServer(arg0 context.Context, arg1 *c
 	return ret0, ret1
 }
 
-// DescribeResourceServer indicates an expected call of DescribeResourceServer.
+// DescribeResourceServer indicates an expected call of DescribeResourceServer
 func (mr *MockCognitoClientMockRecorder) DescribeResourceServer(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DescribeResourceServer", reflect.TypeOf((*MockCognitoClient)(nil).DescribeResourceServer), varargs...)
 }
 
-// UpdateResourceServer mocks base method.
+// UpdateResourceServer mocks base method
 func (m *MockCognitoClient) UpdateResourceServer(arg0 context.Context, arg1 *cognitoidentityprovider.UpdateResourceServerInput, arg2 ...func(*cognitoidentityprovider.Options)) (*cognitoidentityprovider.UpdateResourceServerOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -128,14 +127,14 @@ func (m *MockCognitoClient) UpdateResourceServer(arg0 context.Context, arg1 *cog
 	return ret0, ret1
 }
 
-// UpdateResourceServer indicates an expected call of UpdateResourceServer.
+// UpdateResourceServer indicates an expected call of UpdateResourceServer
 func (mr *MockCognitoClientMockRecorder) UpdateResourceServer(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateResourceServer", reflect.TypeOf((*MockCognitoClient)(nil).UpdateResourceServer), varargs...)
 }
 
-// UpdateUserPoolClient mocks base method.
+// UpdateUserPoolClient mocks base method
 func (m *MockCognitoClient) UpdateUserPoolClient(arg0 context.Context, arg1 *cognitoidentityprovider.UpdateUserPoolClientInput, arg2 ...func(*cognitoidentityprovider.Options)) (*cognitoidentityprovider.UpdateUserPoolClientOutput, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -148,7 +147,7 @@ func (m *MockCognitoClient) UpdateUserPoolClient(arg0 context.Context, arg1 *cog
 	return ret0, ret1
 }
 
-// UpdateUserPoolClient indicates an expected call of UpdateUserPoolClient.
+// UpdateUserPoolClient indicates an expected call of UpdateUserPoolClient
 func (mr *MockCognitoClientMockRecorder) UpdateUserPoolClient(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)

@@ -99,15 +99,15 @@ func (s *StrictServerHandler) CreateOAuthApplication(
 	ctx context.Context,
 	request portalv1.CreateOAuthApplicationRequestObject,
 ) (portalv1.CreateOAuthApplicationResponseObject, error) {
-	if request.Body == nil || len(request.Body.Name) == 0 {
-		return portalv1.CreateOAuthApplication400JSONResponse(newPortal400Error("client name is required")), nil
+	if request.Body == nil || len(request.Body.Name) == 0 || len(request.Body.Id) == 0 {
+		return portalv1.CreateOAuthApplication400JSONResponse(newPortal400Error("client name and unique id is required")), nil
 	}
 
 	var createdClient KeycloakClient
 
 	resp, err := s.restClient.R().
 		SetBody(map[string]interface{}{
-			"clientId": request.Body.Name,
+			"clientId": request.Body.Id,
 			"name":     request.Body.Name,
 		}).
 		SetResult(&createdClient).
@@ -118,7 +118,7 @@ func (s *StrictServerHandler) CreateOAuthApplication(
 	}
 
 	return portalv1.CreateOAuthApplication201JSONResponse{
-		ClientId:     &createdClient.Name,
+		ClientId:     &createdClient.Id,
 		ClientName:   &createdClient.Name,
 		ClientSecret: &createdClient.Secret,
 	}, nil

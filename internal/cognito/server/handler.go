@@ -93,12 +93,13 @@ func (s *StrictServerHandler) DeleteApplication(
 }
 
 // CreateOAuthApplication creates a client in Cognito
+// TODO: How would the ID be used here - if possible? If not, do we just ignore the ID?
 func (s *StrictServerHandler) CreateOAuthApplication(
 	ctx context.Context,
 	request portalv1.CreateOAuthApplicationRequestObject,
 ) (portalv1.CreateOAuthApplicationResponseObject, error) {
-	if request.Body == nil || len(request.Body.Name) == 0 {
-		return portalv1.CreateOAuthApplication400JSONResponse(newPortal400Error("client name is required")), nil
+	if request.Body == nil || len(request.Body.Name) == 0 || len(request.Body.Id) == 0 {
+		return portalv1.CreateOAuthApplication400JSONResponse(newPortal400Error("client name and unique id is required")), nil
 	}
 
 	out, err := s.cognitoClient.CreateUserPoolClient(ctx, &cognito.CreateUserPoolClientInput{

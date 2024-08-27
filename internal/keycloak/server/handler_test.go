@@ -81,13 +81,14 @@ var _ = Describe("Server", func() {
 				resp, err := s.CreateOAuthApplication(ctx, portalv1.CreateOAuthApplicationRequestObject{
 					Body: &portalv1.CreateOAuthApplicationJSONRequestBody{
 						Name: applicationName,
+						Id:   applicationClientId,
 					},
 				})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateOAuthApplication201JSONResponse{}))
 				resp200 := resp.(portalv1.CreateOAuthApplication201JSONResponse)
 				Expect(*resp200.ClientName).To(Equal(applicationName))
-				Expect(*resp200.ClientId).To(Equal(applicationName))
+				Expect(*resp200.ClientId).To(Equal(applicationClientId))
 				Expect(*resp200.ClientSecret).To(Equal(applicationClientSecret))
 			})
 
@@ -101,6 +102,18 @@ var _ = Describe("Server", func() {
 				resp, err := s.CreateOAuthApplication(ctx, portalv1.CreateOAuthApplicationRequestObject{
 					Body: &portalv1.CreateOAuthApplicationJSONRequestBody{
 						Name: "",
+						Id:   applicationClientId,
+					},
+				})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateOAuthApplication400JSONResponse{}))
+			})
+
+			It("returns error code on empty client id", func() {
+				resp, err := s.CreateOAuthApplication(ctx, portalv1.CreateOAuthApplicationRequestObject{
+					Body: &portalv1.CreateOAuthApplicationJSONRequestBody{
+						Name: applicationName,
+						Id:   "",
 					},
 				})
 				Expect(err).NotTo(HaveOccurred())
@@ -255,7 +268,7 @@ var _ = Describe("Server", func() {
 				httpmock.RegisterResponder("GET", endpoints.ResourceRegistration+"?exactName=true&name=api-product-2", resource2IdLookupResponder)
 
 				getPermissionResponder, _ := httpmock.NewJsonResponder(200, []server.Permission{{
-					Id: existingPermissionId,
+					Id:      existingPermissionId,
 					Clients: []string{applicationName},
 				}})
 				httpmock.RegisterResponder("GET", endpoints.Policy, getPermissionResponder)
@@ -281,9 +294,9 @@ var _ = Describe("Server", func() {
 				Expect(resp).To(BeAssignableToTypeOf(portalv1.UpdateAppAPIProducts204Response{}))
 
 				info := httpmock.GetCallCountInfo()
-				Expect(info["DELETE " + endpoints.Policy + "/" + existingPermissionId]).To(Equal(1))
-				Expect(info["POST " + endpoints.Policy + "/" + resource1Id]).To(Equal(1))
-				Expect(info["POST " + endpoints.Policy + "/" + resource2Id]).To(Equal(1))
+				Expect(info["DELETE "+endpoints.Policy+"/"+existingPermissionId]).To(Equal(1))
+				Expect(info["POST "+endpoints.Policy+"/"+resource1Id]).To(Equal(1))
+				Expect(info["POST "+endpoints.Policy+"/"+resource2Id]).To(Equal(1))
 			})
 		})
 	})

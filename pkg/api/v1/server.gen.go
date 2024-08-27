@@ -225,11 +225,7 @@ type CreateOAuthApplicationResponseObject interface {
 	VisitCreateOAuthApplicationResponse(w http.ResponseWriter) error
 }
 
-type CreateOAuthApplication201JSONResponse struct {
-	ClientId     *string `json:"clientId,omitempty"`
-	ClientName   *string `json:"clientName,omitempty"`
-	ClientSecret *string `json:"clientSecret,omitempty"`
-}
+type CreateOAuthApplication201JSONResponse OAuthApplication
 
 func (response CreateOAuthApplication201JSONResponse) VisitCreateOAuthApplicationResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")

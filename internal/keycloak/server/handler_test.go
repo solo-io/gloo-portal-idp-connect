@@ -88,8 +88,8 @@ var _ = Describe("Server", func() {
 				Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateOAuthApplication201JSONResponse{}))
 				resp200 := resp.(portalv1.CreateOAuthApplication201JSONResponse)
 				Expect(*resp200.ClientName).To(Equal(applicationName))
-				Expect(*resp200.ClientId).To(Equal(applicationClientId))
-				Expect(*resp200.ClientSecret).To(Equal(applicationClientSecret))
+				Expect(resp200.ClientId).To(Equal(applicationClientId))
+				Expect(resp200.ClientSecret).To(Equal(applicationClientSecret))
 			})
 
 			It("returns error code on nil body", func() {

@@ -113,8 +113,8 @@ func (s *StrictServerHandler) CreateOAuthApplication(
 	}
 
 	return portalv1.CreateOAuthApplication201JSONResponse{
-		ClientId:     out.UserPoolClient.ClientId,
-		ClientSecret: out.UserPoolClient.ClientSecret,
+		ClientId:     *out.UserPoolClient.ClientId,
+		ClientSecret: *out.UserPoolClient.ClientSecret,
 		ClientName:   aws.String(request.Body.Name),
 	}, nil
 }

@@ -32,17 +32,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  clientId:
-                    type: string
-                    example: a0897e6d0ea94f589c38278bca4e9342
-                  clientSecret:
-                    type: string
-                    example: c94dbd582d594e8aa04934f9c7ef0f52
-                  clientName:
-                    type: string
-                    example: "example-user-pool-developer-1"
+                $ref: '#/components/schemas/OAuthApplication'
           description: Successfully created client.
         '400':
           description: Invalid input.
@@ -78,7 +68,7 @@ paths:
           content:
             application/json:
               schema:
-                  $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/Error'
         '500':
           description: Unexpected error deleting application.
           content:
@@ -112,8 +102,8 @@ paths:
                 apiProducts:
                   type: array
                   items:
-                      type: string
-                      example: "example-api-product"
+                    type: string
+                    example: "example-api-product"
       responses:
         '204':
           description: Successfully added API Product to application.
@@ -219,6 +209,20 @@ components:
         description:
           type: string
           example: "example API Product description"
+    OAuthApplication:
+      required:
+        - clientId
+        - clientSecret
+      properties:
+        clientId:
+          type: string
+          example: a0897e6d0ea94f589c38278bca4e9342
+        clientSecret:
+          type: string
+          example: c94dbd582d594e8aa04934f9c7ef0f52
+        clientName:
+          type: string
+          example: "example-user-pool-developer-1"
     Error:
       required:
         - code

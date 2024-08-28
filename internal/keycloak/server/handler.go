@@ -118,7 +118,7 @@ func (s *StrictServerHandler) CreateOAuthApplication(
 	}
 
 	return portalv1.CreateOAuthApplication201JSONResponse{
-		ClientId:     createdClient.Id,
+		ClientId:     createdClient.Name,
 		ClientName:   &createdClient.Name,
 		ClientSecret: createdClient.Secret,
 	}, nil

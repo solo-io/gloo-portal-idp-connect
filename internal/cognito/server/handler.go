@@ -93,7 +93,6 @@ func (s *StrictServerHandler) DeleteApplication(
 }
 
 // CreateOAuthApplication creates a client in Cognito
-// TODO: How would the ID be used here - if possible? If not, do we just ignore the ID?
 func (s *StrictServerHandler) CreateOAuthApplication(
 	ctx context.Context,
 	request portalv1.CreateOAuthApplicationRequestObject,
@@ -265,6 +264,13 @@ func (s *StrictServerHandler) CreateAPIProduct(
 	}
 
 	return portalv1.CreateAPIProduct201Response{}, nil
+}
+
+func (s *StrictServerHandler) GetAPIProducts(
+	_ context.Context,
+	_ portalv1.GetAPIProductsRequestObject,
+) (portalv1.GetAPIProductsResponseObject, error) {
+	panic("implement me")
 }
 
 func unwrapCognitoError(err error) portalv1.Error {

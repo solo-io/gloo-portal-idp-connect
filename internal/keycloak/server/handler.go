@@ -304,6 +304,51 @@ func (s *StrictServerHandler) CreateAPIProduct(
 	return portalv1.CreateAPIProduct201Response{}, nil
 }
 
+// GetAPIProducts retrieves the list of ApiProduct resources from Keycloak
+// TODO: add a test in handler_test
+func (s *StrictServerHandler) GetAPIProducts(
+	_ context.Context,
+	_ portalv1.GetAPIProductsRequestObject,
+) (portalv1.GetAPIProductsResponseObject, error) {
+	var resourceIds []string
+	resp, err := s.restClient.R().
+		SetResult(&resourceIds).
+		Get(s.discoveredEndpoints.ResourceRegistration)
+
+	if err != nil || resp.IsError() {
+		return portalv1.GetAPIProducts500JSONResponse(unwrapError(resp, err)), nil
+	}
+
+	var apiProducts []portalv1.ApiProduct
+
+	// from the resourceIds, we need to get the names of the resources
+	for _, resourceId := range resourceIds {
+		var resource map[string]interface{}
+
+		getResource, err := s.restClient.R().
+			SetResult(&resource).
+			Get(s.discoveredEndpoints.ResourceRegistration + "/" + resourceId)
+
+		if err != nil || getResource.IsError() {
+			return portalv1.GetAPIProducts500JSONResponse(unwrapError(getResource, err)), nil
+		}
+
+		// We don't want to return the default resource to not risk deleting it when reconciling
+		if resource["name"] == "Default Resource" {
+			continue
+		}
+
+		apiProducts = append(apiProducts, portalv1.ApiProduct{
+			Name: resource["name"].(string),
+		})
+	}
+
+	var apiProductsResponse portalv1.GetAPIProducts200JSONResponse
+	apiProductsResponse = apiProducts
+
+	return apiProductsResponse, nil
+}
+
 // DeleteAPIProduct deletes resources in Keycloak
 func (s *StrictServerHandler) DeleteAPIProduct(
 	ctx context.Context,

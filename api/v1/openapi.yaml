@@ -164,6 +164,27 @@ paths:
       summary: Creates API Product in the OpenID Connect Provider. Then, you can add this API Product to the application for your Portal applications with the `PUT /applications/{id}/api-products` API request.
       tags:
         - API Products
+    get:
+      description: Get all API Products in the Open Id Connect Provider. The Portal uses the results to keep the API Products in the IdP in sync with Portal by creating and deleting as needed.
+      operationId: GetAPIProducts
+      responses:
+        '200':
+          description: Successfully retrieved API Products.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ApiProduct'
+        '500':
+          description: Unexpected error retrieving API Products.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      summary: Get all API Products in the OpenID Connect Provider.
+      tags:
+        - API Products
   /api-products/{name}:
     delete:
       description: Deletes API Product in the Open Id Connect Provider for a given unique identifier.

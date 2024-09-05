@@ -150,6 +150,9 @@ var _ = Describe("Server", func() {
 				newResourceResponder, _ := httpmock.NewJsonResponder(201, nil)
 				httpmock.RegisterResponder("POST", endpoints.ResourceRegistration, newResourceResponder)
 
+				getResourcesResponder, _ := httpmock.NewJsonResponder(200, []string{})
+				httpmock.RegisterResponder("GET", endpoints.ResourceRegistration, getResourcesResponder)
+
 				resourceIdLookupResponder, _ := httpmock.NewJsonResponder(200, []string{})
 				httpmock.RegisterResponder("GET", endpoints.ResourceRegistration+"?exactName=true&name="+nonExistingApiProduct, resourceIdLookupResponder)
 			})
@@ -174,6 +177,14 @@ var _ = Describe("Server", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteAPIProduct404JSONResponse{}))
 			})
+
+			It("returns an empty list if no API Products are found", func() {
+				resp, err := s.GetAPIProducts(ctx, portalv1.GetAPIProductsRequestObject{})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(resp).To(BeAssignableToTypeOf(portalv1.GetAPIProducts200JSONResponse{}))
+				resp200 := resp.(portalv1.GetAPIProducts200JSONResponse)
+				Expect(resp200).To(BeEmpty())
+			})
 		})
 
 		When("resource exists", func() {
@@ -184,11 +195,28 @@ var _ = Describe("Server", func() {
 				newResourceResponder, _ := httpmock.NewJsonResponder(409, nil)
 				httpmock.RegisterResponder("POST", endpoints.ResourceRegistration, newResourceResponder)
 
+				getResourcesResponder, _ := httpmock.NewJsonResponder(200, [1]string{resourceId})
+				httpmock.RegisterResponder("GET", endpoints.ResourceRegistration, getResourcesResponder)
+
+				getResourceResponser, _ := httpmock.NewJsonResponder(200, map[string]any{"name": apiProduct})
+				httpmock.RegisterResponder("GET", endpoints.ResourceRegistration+"/"+resourceId, getResourceResponser)
+
 				resourceIdLookupResponder, _ := httpmock.NewJsonResponder(200, []string{resourceId})
 				httpmock.RegisterResponder("GET", endpoints.ResourceRegistration+"?exactName=true&name="+apiProduct, resourceIdLookupResponder)
 
 				deleteResourceResponder, _ := httpmock.NewJsonResponder(204, nil)
 				httpmock.RegisterResponder("DELETE", endpoints.ResourceRegistration+"/"+resourceId, deleteResourceResponder)
+			})
+
+			It("can get API Products", func() {
+				resp, err := s.GetAPIProducts(ctx, portalv1.GetAPIProductsRequestObject{})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(resp).To(BeAssignableToTypeOf(portalv1.GetAPIProducts200JSONResponse{}))
+				resp200 := resp.(portalv1.GetAPIProducts200JSONResponse)
+				Expect(resp200).To(HaveLen(1))
+				Expect(resp200).To(ContainElement(portalv1.ApiProduct{
+					Name: apiProduct,
+				}))
 			})
 
 			It("can delete the APIProduct", func() {

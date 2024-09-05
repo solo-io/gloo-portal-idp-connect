@@ -305,7 +305,6 @@ func (s *StrictServerHandler) CreateAPIProduct(
 }
 
 // GetAPIProducts retrieves the list of ApiProduct resources from Keycloak
-// TODO: add a test in handler_test
 func (s *StrictServerHandler) GetAPIProducts(
 	_ context.Context,
 	_ portalv1.GetAPIProductsRequestObject,

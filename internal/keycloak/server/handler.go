@@ -342,10 +342,7 @@ func (s *StrictServerHandler) GetAPIProducts(
 		})
 	}
 
-	var apiProductsResponse portalv1.GetAPIProducts200JSONResponse
-	apiProductsResponse = apiProducts
-
-	return apiProductsResponse, nil
+	return portalv1.GetAPIProducts200JSONResponse(apiProducts), nil
 }
 
 // DeleteAPIProduct deletes resources in Keycloak

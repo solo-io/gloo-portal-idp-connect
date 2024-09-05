@@ -98,7 +98,7 @@ func (s *StrictServerHandler) CreateOAuthApplication(
 	request portalv1.CreateOAuthApplicationRequestObject,
 ) (portalv1.CreateOAuthApplicationResponseObject, error) {
 	if request.Body == nil || len(request.Body.Id) == 0 {
-		return portalv1.CreateOAuthApplication400JSONResponse(newPortal400Error("client name and unique id is required")), nil
+		return portalv1.CreateOAuthApplication400JSONResponse(newPortal400Error("unique id is required")), nil
 	}
 
 	out, err := s.cognitoClient.CreateUserPoolClient(ctx, &cognito.CreateUserPoolClientInput{
@@ -114,7 +114,7 @@ func (s *StrictServerHandler) CreateOAuthApplication(
 	return portalv1.CreateOAuthApplication201JSONResponse{
 		ClientId:     *out.UserPoolClient.ClientId,
 		ClientSecret: *out.UserPoolClient.ClientSecret,
-		ClientName:   out.UserPoolClient.ClientName, // TODO: use this? or request.Body.Id directly?
+		ClientName:   aws.String(request.Body.Id),
 	}, nil
 }
 

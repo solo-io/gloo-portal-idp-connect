@@ -1,7 +1,7 @@
 # IDP Connect
 
-IDP Connect is an implementation of the Service Programming Interface Gloo Platform Portal uses in order to manage client credentials for accessing services in your Kubernetes Cluster. In Gloo Platform Portal, we use the concept of "Applications" to refer to the external applications accessing the API Products exposed via your Gloo Portal. When a user registers an application as an OAuth client,
-it is the responsibility of the SPI to create the credential associated with that application. For more information, and to review key terms associated with Gloo Platform Portal, checkout out our documentation: [Gloo Portal Documentation](https://docs.solo.io/gloo-portal/latest/).
+IDP Connect is an implementation of the Service Programming Interface Gloo Gateway Portal uses in order to manage client credentials for accessing services in your Kubernetes Cluster. In Gloo Gateway Portal, we use the concept of "Applications" to refer to the external applications accessing the API Products exposed via your Gloo Portal. When a user registers an application as an OAuth client,
+it is the responsibility of the SPI to create the credential associated with that application. For more information, and to review key terms associated with Gloo Gateway Portal, checkout out our documentation: [Gloo Portal Documentation](https://docs.solo.io/gloo-portal/latest/).
 
 ## Supported Identity Providers
 

@@ -2,7 +2,7 @@
 
 ## AWS Cognito
 
-Below are the instructions for using AWS Cognito to manage client credentials and access tokens for your API Products and configure Gloo Platform to authorize them.
+Below are the instructions for using AWS Cognito to manage client credentials and access tokens for your API Products and configure Gloo Gateway to authorize them.
 
 ### Manual Bootstrap
 
@@ -70,7 +70,7 @@ You will be granted an access-token (JWT), which decoded should look something l
 
 ### Set up the resource server, resources, clients and permissions
 
-The base requirement for API Product Authorization with Keycloak is a realm and a resource server. In the Keycloak administation UI, perform the following steps to create these:
+The base requirement for API Product Authorization with Keycloak is a realm and a resource server. In the Keycloak administration UI, perform the following steps to create these:
 
 1. In the realm drop-down click **Create realm**. Give your realm a name and make sure it is **Enabled**
 1. Within the realm, select _Clients_ and create a new client for the Gloo Portal. This will be the _resource server_ with which we associate API products as _resources_
@@ -84,6 +84,7 @@ If not using the SPI and wanting to manually bootstrap Keycloak, follow these ad
    * Create a resource for each API product being protected
 1. Create a new _Client_ for each application
    * Enable **Direct access grants** so that the client can obtain tokens for users with their username and password
+   * Enable **Client authentication** so that you may retrieve the client secret for use in generating access tokens.
 1. Back in the Gloo Portal client (resource server), authorise a test application (client) to one of the API products (resources)
    1. Click into the client's _Authorization_ tab, select _Policies_ and then **Create client policy**
    1. Select a policy type of "Client", give it the same name as the test application, and select the test application client from the list in the **Clients** field
@@ -101,7 +102,7 @@ To obtain an OAuth access token from Keycloak, we first need to determine its �
 KEYCLOAK_URL=<your Keycloak host and port>
 REALM=<the realm you created>
 
-TOKEN_ENDPOINT=$(curl http://${KEYCLOAK_URL}/realms/${REALM}/.well-known/openid-configuration | jq -r .token_endpoint)
+TOKEN_ENDPOINT=$(curl ${KEYCLOAK_URL}/realms/${REALM}/.well-known/openid-configuration | jq -r .token_endpoint)
 ```
 
 We can now fetch a new access token for our test user and one of the client applications:
@@ -109,12 +110,12 @@ We can now fetch a new access token for our test user and one of the client appl
 ```sh
 CLIENT_ID=<the name of the application client you selected>
 CLIENT_SECRET=<the secret of the application client you selected>
-USERNAME=<username of the test user>
+USER_NAME=<username of the test user>
 PASSWORD=<password of the test user>
 
 USER_TOKEN=$(curl ${TOKEN_ENDPOINT} \
   -d "client_id=${CLIENT_ID}" -d "client_secret=${CLIENT_SECRET}" \
-  -d "username=${USERNAME}" -d "password=${PASSWORD}" \
+  -d "username=${USER_NAME}" -d "password=${PASSWORD}" \
   -d "grant_type=password" |
   jq -r .access_token)
 ```
@@ -147,7 +148,7 @@ Token claims
   "iss": "${KEYCLOAK_URL}/realms/${REALM}",
   "jti": "e6c8494a-618a-44f5-9c40-503c503c42bd",
   "name": "User One",
-  "preferred_username": "${USERNAME}",
+  "preferred_username": "${USER_NAME}",
   "realm_access": {
     "roles": [
       "offline_access",
@@ -236,7 +237,7 @@ spec:
 
 In this RouteTable, notice the “apiProductId” in the Portal metadata which matches the name of one of our scopes (i.e. access/tracks-rest-api). This facilitates authorization using OPA as this will be available to the rules when they are evaluated. Note that this label is just an example and can be named anything.
 
-> **Note**: In order for the OPA policy to work, a dev portal must be enabled and an API Doc for the configured API Product must be generated. This is what triggers Gloo Platform to add the necessary context to allow the OPA policy to validate which API Product the request is targeting.
+> **Note**: In order for the OPA policy to work, a dev portal must be enabled and an API Doc for the configured API Product must be generated. This is what triggers Gloo Gateway to add the necessary context to allow the OPA policy to validate which API Product the request is targeting.
 
 We can now create a ConfigMap with our OPA policies to only grant access to API Products when the access token corresponds to permissions to access the ApiProductId. How to implement this policy differs depending on the IDP in use:
 
@@ -405,7 +406,7 @@ spec:
           accessTokenValidation:
             jwt:
               remote_jwks:
-                url: http://${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/certs
+                url: ${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/certs
       - opaAuth:
           modules:
           - name: oauth-scope-apiproduct-opa-cm

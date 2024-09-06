@@ -1,7 +1,7 @@
 info:
-  title: 'Gloo Platform Portal IDP Connect API'
+  title: 'Gloo Gateway Portal IDP Connect API'
   version: 1.0.0
-  description: Before you begin, set up Gloo Platform Portal with your OpenID Connect (OIDC) provider. Then with this IDP Connect API, you can manage the clients and API Products in your OIDC provider that get associated with your Portal applications. For more information, see the [Gloo Platform Portal docs](https://docs.solo.io/gloo-portal/latest/).
+  description: Before you begin, set up Gloo Gateway Portal with your OpenID Connect (OIDC) provider. Then with this IDP Connect API, you can manage the clients and API Products in your OIDC provider that get associated with your Portal applications. For more information, see the [Gloo Gateway Portal docs](https://docs.solo.io/gloo-portal/latest/).
 openapi: 3.0.0
 servers:
   - url: https://api.gloo-platform-portal.com/v1

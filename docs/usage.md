@@ -1,6 +1,6 @@
-# Use with Gloo Platform
+# Use with Gloo Gateway
 
-The idea behind the Service Programming Interface is to provide an interopability layer between Gloo Platform Portal and the IDP that the customer wants to use. In order to get the desired functionality, there are two flows that need to be implemented: IDP Configuration and Data Path Authorization.
+The idea behind the Service Programming Interface is to provide an interopability layer between Gloo Gateway Portal and the IDP that the customer wants to use. In order to get the desired functionality, there are two flows that need to be implemented: IDP Configuration and Data Path Authorization.
 
 ## AWS Cognito Example
 
@@ -34,11 +34,11 @@ Once the API Product has been given access to the application, you can see that 
 
 ![Obtaining Access Token](./images/retrieve-credentials.png)
 
-Cognito's token endpoint can be used to retrieve the access token. See [Configuring Gloo Platform](./configuring-gloo-platform.md) for more information on how to use the access token to authorize requests to your API Products.
+Cognito's token endpoint can be used to retrieve the access token. See [Configuring Gloo Gateway](./configuring-gloo-gateway.md) for more information on how to use the access token to authorize requests to your API Products.
 
 ![Data Path](./images/data-path.png)
 
-The Access token can be used to authorize requests via ext-auth. The most convenient method would be to use OPA in order to match the scope of the access token against the `apiProductId` of the API Product. See [Configuring Gloo Platform](./configuring-gloo-platform.md) for more information on how to use the access token to authorize requests to your API Products.
+The Access token can be used to authorize requests via ext-auth. The most convenient method would be to use OPA in order to match the scope of the access token against the `apiProductId` of the API Product. See [Configuring Gloo Gateway](./configuring-gloo-gateway.md) for more information on how to use the access token to authorize requests to your API Products.
 
 ## Keycloak Example
 
@@ -61,7 +61,7 @@ Policy enforcement points (such as Gloo ext-auth) have at least two options for 
 * Validating a Requesting Party Token (RPT) obtained by the client, possibly via a [UMA Grant Flow](https://www.keycloak.org/docs/latest/authorization_services/#_service_uma_authorization_process)
 * Directly checking permissions in Keycloak
 
-In either case, requests can be authorised via Gloo ext-auth. The most convenient method is to use OPA in order to match permissions against the `apiProductId` of the API Product. See [Configuring Gloo Platform](./configuring-gloo-platform.md) for an example of how to use the access token to authorize requests to your API Products.
+In either case, requests can be authorised via Gloo ext-auth. The most convenient method is to use OPA in order to match permissions against the `apiProductId` of the API Product. See [Configuring Gloo Gateway](./configuring-gloo-gateway.md) for an example of how to use the access token to authorize requests to your API Products.
 
 #### Requesting Party Token (RPT)
 

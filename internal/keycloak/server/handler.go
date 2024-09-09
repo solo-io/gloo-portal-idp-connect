@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"regexp"
 	"slices"
+	"strings"
 	"time"
 
 	resty "github.com/go-resty/resty/v2"
@@ -33,6 +34,7 @@ type KeycloakClient struct {
 
 type Permission struct {
 	Id      string   `json:"id"`
+	Name    string   `json:"name"`
 	Clients []string `json:"clients"`
 }
 
@@ -245,23 +247,56 @@ func (s *StrictServerHandler) UpdateAppAPIProducts(
 		return portalv1.UpdateAppAPIProducts500JSONResponse(unwrapError(getPermissions, err)), nil
 	}
 
-	// Delete all existing permissions for this client
+	// Filter the permissions to only those that are for the client
+	clientPermissions := make(map[string]Permission)
 	for _, permission := range allPermissions {
+		// We only care for permissions that are for the client.
 		if slices.Contains(permission.Clients, request.Id) {
-			deletePermission, err := s.restClient.R().
-				Delete(s.discoveredEndpoints.Policy + "/" + permission.Id)
+			clientPermissions[permission.Name] = permission
+		}
+	}
 
-			if err != nil || deletePermission.IsError() {
-				return portalv1.UpdateAppAPIProducts500JSONResponse(unwrapError(deletePermission, err)), nil
+	permissionsToCreate := make(map[string]string)
+	var permissionsToDelete []string
+
+	// Get all the permissions to delete.
+	// We know which permissions need to be deleted if they exist in the clientPermissions map but not found in the passed in resourceIds, which should have the complete list of resources the client should have access to.
+	for _, permission := range clientPermissions {
+		// The permission ID is in the format of "<clientId>/<apiName>", so we extract the apiName by removing the `<clientId>/` from the beginning of the string.
+		// To avoid any possibility of null-pointer hits, we check if the string starts with the client ID before removing it.
+		if strings.HasPrefix(permission.Name, request.Id+"/") {
+			// ResourceIds is a map of apiName -> resourceId, so we get the api name from the permission ID and check if it exists in the resourceIds map. If not, we add it to the list of permissions to delete.
+			if _, ok := resourceIds[GetApiNameFromPermission(permission.Name, request.Id)]; !ok {
+				permissionsToDelete = append(permissionsToDelete, permission.Id)
 			}
 		}
 	}
 
-	// Create new permissions for all API products in the request
+	// Get all the permissions to create.
+	// We know which permissions need to be created if they exist in the passed in resourceIds but not found in the clientPermissions map.
 	for resourceName, resourceId := range resourceIds {
+		// If the client doesn't have a permission for the resource, we need to create one.
+		// Permission IDs are in the format of "<clientId>/<apiName>", so we check if the client has a permission for the resource by checking if the permission ID exists in the clientPermissions map. If not, we add it to the list of permissions to create.
+		if _, ok := clientPermissions[PermissionName(request.Id, resourceName)]; !ok {
+			permissionsToCreate[resourceName] = resourceId
+		}
+	}
+
+	// Delete the permissions that are no longer needed
+	for _, permissionId := range permissionsToDelete {
+		deletePermission, err := s.restClient.R().
+			Delete(s.discoveredEndpoints.Policy + "/" + permissionId)
+
+		if err != nil || deletePermission.IsError() {
+			return portalv1.UpdateAppAPIProducts500JSONResponse(unwrapError(deletePermission, err)), nil
+		}
+	}
+
+	// Create the new permissions that are needed
+	for resourceName, resourceId := range permissionsToCreate {
 		newPermission, err := s.restClient.R().
 			SetBody(map[string]interface{}{
-				"name":        request.Id + "/" + resourceName,
+				"name":        PermissionName(request.Id, resourceName),
 				"description": resourceName + " access for client " + request.Id,
 				"clients":     [1]string{request.Id},
 			}).

@@ -2,7 +2,6 @@ package server_test
 
 import (
 	"context"
-
 	resty "github.com/go-resty/resty/v2"
 	_ "github.com/golang/mock/mockgen/model"
 	"github.com/jarcoal/httpmock"
@@ -245,8 +244,6 @@ var _ = Describe("Server", func() {
 	Context("Client <-> API Products authorisation", func() {
 
 		apiProducts := []string{"api-product-1", "api-product-2"}
-		resource1Id := "resource-1-internal-id"
-		resource2Id := "resource-2-internal-id"
 
 		When("client does not exist", func() {
 
@@ -269,39 +266,75 @@ var _ = Describe("Server", func() {
 
 		When("referencing client that does exist", func() {
 
+			newResourceName := "new-api-product"
+			newResourceId := "new-resource-id"
+
+			existingResourceName := "existing-api-product"
+			existingResourceId := "existing-resource-id"
 			existingPermissionId := "existing-permission-id"
 
 			BeforeEach(func() {
 				getClientResponder, _ := httpmock.NewJsonResponder(200, [1]server.KeycloakClient{dummyClient})
 				httpmock.RegisterResponder("GET", fakeAdminEndpoint+"/clients?clientId="+applicationClientId, getClientResponder)
 
-				resource1IdLookupResponder, _ := httpmock.NewJsonResponder(200, []string{resource1Id})
-				httpmock.RegisterResponder("GET", endpoints.ResourceRegistration+"?exactName=true&name=api-product-1", resource1IdLookupResponder)
-
-				resource2IdLookupResponder, _ := httpmock.NewJsonResponder(200, []string{resource2Id})
-				httpmock.RegisterResponder("GET", endpoints.ResourceRegistration+"?exactName=true&name=api-product-2", resource2IdLookupResponder)
-
 				getPermissionResponder, _ := httpmock.NewJsonResponder(200, []server.Permission{{
 					Id:      existingPermissionId,
+					Name:    server.PermissionName(applicationClientId, existingResourceName),
 					Clients: []string{applicationClientId},
 				}})
 				httpmock.RegisterResponder("GET", endpoints.Policy, getPermissionResponder)
 
+				newResourceIdLookupResponder, _ := httpmock.NewJsonResponder(200, []string{newResourceId})
+				httpmock.RegisterResponder("GET", endpoints.ResourceRegistration+"?exactName=true&name="+newResourceName, newResourceIdLookupResponder)
+
+				existingResourceIdLookupResponder, _ := httpmock.NewJsonResponder(200, []string{existingResourceId})
+				httpmock.RegisterResponder("GET", endpoints.ResourceRegistration+"?exactName=true&name="+existingResourceName, existingResourceIdLookupResponder)
+
 				deletePermissionResponder, _ := httpmock.NewJsonResponder(204, nil)
 				httpmock.RegisterResponder("DELETE", endpoints.Policy+"/"+existingPermissionId, deletePermissionResponder)
 
-				newPermission1Responder, _ := httpmock.NewJsonResponder(200, nil)
-				httpmock.RegisterResponder("POST", endpoints.Policy+"/"+resource1Id, newPermission1Responder)
-
-				newPermission2Responder, _ := httpmock.NewJsonResponder(200, nil)
-				httpmock.RegisterResponder("POST", endpoints.Policy+"/"+resource2Id, newPermission2Responder)
+				newPermissionResponder, _ := httpmock.NewJsonResponder(200, nil)
+				httpmock.RegisterResponder("POST", endpoints.Policy+"/"+newResourceId, newPermissionResponder)
 			})
 
-			It("can update client API Products", func() {
+			It("does not re-create permissions for existing Api Products", func() {
 				resp, err := s.UpdateAppAPIProducts(ctx, portalv1.UpdateAppAPIProductsRequestObject{
 					Id: applicationClientId,
 					Body: &portalv1.UpdateAppAPIProductsJSONRequestBody{
-						ApiProducts: apiProducts,
+						ApiProducts: []string{existingResourceName},
+					},
+				})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(resp).To(BeAssignableToTypeOf(portalv1.UpdateAppAPIProducts204Response{}))
+
+				info := httpmock.GetCallCountInfo()
+				Expect(info["POST "+endpoints.Policy+"/"+existingResourceId]).To(Equal(0))
+				Expect(info["DELETE "+endpoints.Policy+"/"+existingPermissionId]).To(Equal(0))
+			})
+
+			It("adds permissions for new API Products", func() {
+				resp, err := s.UpdateAppAPIProducts(ctx, portalv1.UpdateAppAPIProductsRequestObject{
+					Id: applicationClientId,
+					Body: &portalv1.UpdateAppAPIProductsJSONRequestBody{
+						// here we pass the existing resource, whose permissions should not be recreated, and a new one which should
+						ApiProducts: []string{existingResourceName, newResourceName},
+					},
+				})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(resp).To(BeAssignableToTypeOf(portalv1.UpdateAppAPIProducts204Response{}))
+
+				info := httpmock.GetCallCountInfo()
+				Expect(info["POST "+endpoints.Policy+"/"+newResourceId]).To(Equal(1))
+				// the existing resource + its permission should not be created nor deleted
+				Expect(info["POST "+endpoints.Policy+"/"+existingResourceId]).To(Equal(0))
+				Expect(info["DELETE "+endpoints.Policy+"/"+existingPermissionId]).To(Equal(0))
+			})
+
+			It("deletes permissions for removed API Products", func() {
+				resp, err := s.UpdateAppAPIProducts(ctx, portalv1.UpdateAppAPIProductsRequestObject{
+					Id: applicationClientId,
+					Body: &portalv1.UpdateAppAPIProductsJSONRequestBody{
+						ApiProducts: []string{}, // because we don't pass the existingResourceName but it is an existing permissions, it should be deleted
 					},
 				})
 				Expect(err).NotTo(HaveOccurred())
@@ -309,8 +342,6 @@ var _ = Describe("Server", func() {
 
 				info := httpmock.GetCallCountInfo()
 				Expect(info["DELETE "+endpoints.Policy+"/"+existingPermissionId]).To(Equal(1))
-				Expect(info["POST "+endpoints.Policy+"/"+resource1Id]).To(Equal(1))
-				Expect(info["POST "+endpoints.Policy+"/"+resource2Id]).To(Equal(1))
 			})
 		})
 	})

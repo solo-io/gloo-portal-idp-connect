@@ -30,9 +30,9 @@ cognito:
 keycloak:
   # (Required) Keycloak issuer URL (e.g. https://keycloak.example.com/realms/my-org)
   realm: ""
-  # (Required) ID of the Keycloak client that is authorised to manage clients
+  # (Required) ID of the Keycloak client that is authorised to manage app clients
   mgmtClientId: ""
-  # (Required) Secret of the Keycloak client that is authorised to manage clients
+  # (Required) Secret of the Keycloak client that is authorised to manage app clients
   mgmtClientSecret: ""
 resources:
   container:

@@ -35,8 +35,8 @@ type DiscoveredEndpoints struct {
 func (o *Options) AddToFlags(flag *pflag.FlagSet) {
 	flag.StringVar(&o.Port, "port", "8080", "Port for HTTP server")
 	flag.StringVar(&o.Issuer, "issuer", "", "Keycloak issuer URL (e.g. https://keycloak.example.com/realms/my-org)")
-	flag.StringVar(&o.MgmtClientId, "client-id", "", "ID of the Keycloak client that is authorised to manage clients")
-	flag.StringVar(&o.MgmtClientSecret, "client-secret", "", "Secret of the Keycloak client that is authorised to manage clients")
+	flag.StringVar(&o.MgmtClientId, "client-id", "", "ID of the Keycloak client that is authorised to manage app clients")
+	flag.StringVar(&o.MgmtClientSecret, "client-secret", "", "Secret of the Keycloak client that is authorised to manage app clients")
 }
 
 func (o *Options) Validate() error {

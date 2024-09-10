@@ -54,7 +54,7 @@ You will be granted an access-token (JWT), which decoded should look something l
     {
         "sub": "s2ai3kk4j6vfun6po9747bi1g",
         "token_use": "access",
-        "scope": "access/catstronauts-api tracks-rest-api",
+        "scope": "access/catstronauts-api access/tracks-rest-api",
         "auth_time": 1699993949,
         "iss": "https://cognito-idp.eu-north-1.amazonaws.com/eu-north-1_6GQrqVZAY",
         "exp": 1699997549,

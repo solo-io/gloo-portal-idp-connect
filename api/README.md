@@ -1,6 +1,6 @@
 # Overview
 
-This directory contains the API for Gloo Platform Portal IDP Connect.
+This directory contains the API for Gloo Gateway Portal IDP Connect.
 
 ## Generation
 

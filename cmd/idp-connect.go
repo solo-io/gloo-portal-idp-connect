@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/solo-io/gloo-portal-idp-connect/internal/cognito"
+	"github.com/solo-io/gloo-portal-idp-connect/internal/keycloak"
 	"github.com/solo-io/gloo-portal-idp-connect/internal/version"
 )
 
@@ -28,6 +29,7 @@ func rootCommand(ctx context.Context) *cobra.Command {
 
 	cmd.AddCommand(
 		cognito.Command(),
+		keycloak.Command(),
 	)
 
 	return cmd

@@ -16,6 +16,9 @@ import (
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Get all API Products in the OpenID Connect Provider.
+	// (GET /api-products)
+	GetAPIProducts(ctx echo.Context) error
 	// Creates API Product in the OpenID Connect Provider. Then, you can add this API Product to the application for your Portal applications with the `PUT /applications/{id}/api-products` API request.
 	// (POST /api-products)
 	CreateAPIProduct(ctx echo.Context) error
@@ -36,6 +39,15 @@ type ServerInterface interface {
 // ServerInterfaceWrapper converts echo contexts to parameters.
 type ServerInterfaceWrapper struct {
 	Handler ServerInterface
+}
+
+// GetAPIProducts converts echo context to params.
+func (w *ServerInterfaceWrapper) GetAPIProducts(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GetAPIProducts(ctx)
+	return err
 }
 
 // CreateAPIProduct converts echo context to params.
@@ -132,12 +144,38 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 		Handler: si,
 	}
 
+	router.GET(baseURL+"/api-products", wrapper.GetAPIProducts)
 	router.POST(baseURL+"/api-products", wrapper.CreateAPIProduct)
 	router.DELETE(baseURL+"/api-products/:name", wrapper.DeleteAPIProduct)
 	router.POST(baseURL+"/applications/oauth2", wrapper.CreateOAuthApplication)
 	router.DELETE(baseURL+"/applications/:id", wrapper.DeleteApplication)
 	router.PUT(baseURL+"/applications/:id/api-products", wrapper.UpdateAppAPIProducts)
 
+}
+
+type GetAPIProductsRequestObject struct {
+}
+
+type GetAPIProductsResponseObject interface {
+	VisitGetAPIProductsResponse(w http.ResponseWriter) error
+}
+
+type GetAPIProducts200JSONResponse []ApiProduct
+
+func (response GetAPIProducts200JSONResponse) VisitGetAPIProductsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAPIProducts500JSONResponse Error
+
+func (response GetAPIProducts500JSONResponse) VisitGetAPIProductsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type CreateAPIProductRequestObject struct {
@@ -225,11 +263,7 @@ type CreateOAuthApplicationResponseObject interface {
 	VisitCreateOAuthApplicationResponse(w http.ResponseWriter) error
 }
 
-type CreateOAuthApplication201JSONResponse struct {
-	ClientId     *string `json:"clientId,omitempty"`
-	ClientName   *string `json:"clientName,omitempty"`
-	ClientSecret *string `json:"clientSecret,omitempty"`
-}
+type CreateOAuthApplication201JSONResponse OAuthApplication
 
 func (response CreateOAuthApplication201JSONResponse) VisitCreateOAuthApplicationResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -336,6 +370,9 @@ func (response UpdateAppAPIProducts500JSONResponse) VisitUpdateAppAPIProductsRes
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// Get all API Products in the OpenID Connect Provider.
+	// (GET /api-products)
+	GetAPIProducts(ctx context.Context, request GetAPIProductsRequestObject) (GetAPIProductsResponseObject, error)
 	// Creates API Product in the OpenID Connect Provider. Then, you can add this API Product to the application for your Portal applications with the `PUT /applications/{id}/api-products` API request.
 	// (POST /api-products)
 	CreateAPIProduct(ctx context.Context, request CreateAPIProductRequestObject) (CreateAPIProductResponseObject, error)
@@ -363,6 +400,29 @@ func NewStrictHandler(ssi StrictServerInterface, middlewares []StrictMiddlewareF
 type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
+}
+
+// GetAPIProducts operation middleware
+func (sh *strictHandler) GetAPIProducts(ctx echo.Context) error {
+	var request GetAPIProductsRequestObject
+
+	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAPIProducts(ctx.Request().Context(), request.(GetAPIProductsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAPIProducts")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		return err
+	} else if validResponse, ok := response.(GetAPIProductsResponseObject); ok {
+		return validResponse.VisitGetAPIProductsResponse(ctx.Response())
+	} else if response != nil {
+		return fmt.Errorf("unexpected response type: %T", response)
+	}
+	return nil
 }
 
 // CreateAPIProduct operation middleware

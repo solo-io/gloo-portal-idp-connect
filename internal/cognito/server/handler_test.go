@@ -26,10 +26,11 @@ const (
 
 var _ = Describe("Server", func() {
 	var (
-		s                 *server.StrictServerHandler
-		mockCtrl          *gomock.Controller
-		mockCognitoClient *mock_server.MockCognitoClient
-		ctx               context.Context
+		s                   *server.StrictServerHandler
+		mockCtrl            *gomock.Controller
+		mockCognitoClient   *mock_server.MockCognitoClient
+		ctx                 context.Context
+		applicationClientId = "client-internal-id"
 	)
 
 	BeforeEach(func() {
@@ -81,16 +82,15 @@ var _ = Describe("Server", func() {
 				)
 			})
 			It("can create a client", func() {
-				client := "test-client"
 				resp, err := s.CreateOAuthApplication(ctx, portalv1.CreateOAuthApplicationRequestObject{
 					Body: &portalv1.CreateOAuthApplicationJSONRequestBody{
-						Name: client,
+						Id: applicationClientId,
 					},
 				})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateOAuthApplication201JSONResponse{}))
 				resp200 := resp.(portalv1.CreateOAuthApplication201JSONResponse)
-				Expect(*resp200.ClientName).To(Equal(client))
+				Expect(*resp200.ClientName).To(Equal(applicationClientId))
 				Expect(resp200.ClientId).NotTo(BeNil())
 				Expect(resp200.ClientSecret).NotTo(BeNil())
 			})
@@ -101,10 +101,10 @@ var _ = Describe("Server", func() {
 				Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateOAuthApplication400JSONResponse{}))
 			})
 
-			It("returns error code on empty client name", func() {
+			It("returns an error code on empty client id", func() {
 				resp, err := s.CreateOAuthApplication(ctx, portalv1.CreateOAuthApplicationRequestObject{
 					Body: &portalv1.CreateOAuthApplicationJSONRequestBody{
-						Name: "",
+						Id: "",
 					},
 				})
 				Expect(err).NotTo(HaveOccurred())

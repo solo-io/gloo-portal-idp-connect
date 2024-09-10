@@ -97,13 +97,13 @@ func (s *StrictServerHandler) CreateOAuthApplication(
 	ctx context.Context,
 	request portalv1.CreateOAuthApplicationRequestObject,
 ) (portalv1.CreateOAuthApplicationResponseObject, error) {
-	if request.Body == nil || len(request.Body.Name) == 0 {
-		return portalv1.CreateOAuthApplication400JSONResponse(newPortal400Error("client name is required")), nil
+	if request.Body == nil || len(request.Body.Id) == 0 {
+		return portalv1.CreateOAuthApplication400JSONResponse(newPortal400Error("unique id is required")), nil
 	}
 
 	out, err := s.cognitoClient.CreateUserPoolClient(ctx, &cognito.CreateUserPoolClientInput{
 		UserPoolId:     &s.userPool,
-		ClientName:     aws.String(request.Body.Name),
+		ClientName:     aws.String(request.Body.Id),
 		GenerateSecret: true,
 	})
 
@@ -112,9 +112,9 @@ func (s *StrictServerHandler) CreateOAuthApplication(
 	}
 
 	return portalv1.CreateOAuthApplication201JSONResponse{
-		ClientId:     out.UserPoolClient.ClientId,
-		ClientSecret: out.UserPoolClient.ClientSecret,
-		ClientName:   aws.String(request.Body.Name),
+		ClientId:     *out.UserPoolClient.ClientId,
+		ClientSecret: *out.UserPoolClient.ClientSecret,
+		ClientName:   aws.String(request.Body.Id),
 	}, nil
 }
 
@@ -264,6 +264,13 @@ func (s *StrictServerHandler) CreateAPIProduct(
 	}
 
 	return portalv1.CreateAPIProduct201Response{}, nil
+}
+
+func (s *StrictServerHandler) GetAPIProducts(
+	_ context.Context,
+	_ portalv1.GetAPIProductsRequestObject,
+) (portalv1.GetAPIProductsResponseObject, error) {
+	panic("implement me")
 }
 
 func unwrapCognitoError(err error) portalv1.Error {

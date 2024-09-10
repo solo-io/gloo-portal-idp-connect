@@ -15,8 +15,14 @@ jobs:
       - uses: actions/checkout@v4
       - id: set_version
         run: |
+          # In order to publish Helm charts we need valid semantic version, so we get the latest release tag to prefix the version with.
+          git fetch --tags
+
+          # Try to get the latest tag, fallback to 0.0.0 if no tag is found
+          LATEST_RELEASE=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+
           BRANCH=$(echo $(git rev-parse --abbrev-ref HEAD) | tr -d '0123456789/.')
-          VERSION=dev-$BRANCH-$(git rev-parse --short HEAD)
+          VERSION=$LATEST_RELEASE-dev-$BRANCH-$(git rev-parse --short HEAD)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Set version to $VERSION"
   docker-release:

@@ -7,7 +7,7 @@ image:
 service:
   # Port for IDP Connect service to listen on. This is also the port the service will be configured to listen on.
   port: 80
-# Connector to use in IDP connect sample. Supported connectors are: 'cognito'
+# Connector to use in IDP connect sample. Supported connectors are: 'cognito' and 'keycloak'
 connector: cognito
 # Configuration for the cognito connector
 cognito:
@@ -26,6 +26,14 @@ cognito:
     secretAccessKey: ""
     # AWS session token
     sessionToken: ""
+# Configuration for the keycloak connector
+keycloak:
+  # (Required) Keycloak issuer URL (e.g. https://keycloak.example.com/realms/my-org)
+  realm: ""
+  # (Required) ID of the Keycloak client that is authorised to manage app clients
+  mgmtClientId: ""
+  # (Required) Secret of the Keycloak client that is authorised to manage app clients
+  mgmtClientSecret: ""
 resources:
   container:
     limit:

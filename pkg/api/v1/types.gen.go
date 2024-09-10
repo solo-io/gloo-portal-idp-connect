@@ -16,6 +16,13 @@ type Error struct {
 	Reason  string `json:"reason"`
 }
 
+// OAuthApplication defines model for OAuthApplication.
+type OAuthApplication struct {
+	ClientId     string  `json:"clientId"`
+	ClientName   *string `json:"clientName,omitempty"`
+	ClientSecret string  `json:"clientSecret"`
+}
+
 // CreateAPIProductJSONBody defines parameters for CreateAPIProduct.
 type CreateAPIProductJSONBody struct {
 	ApiProduct ApiProduct `json:"apiProduct"`
@@ -23,7 +30,7 @@ type CreateAPIProductJSONBody struct {
 
 // CreateOAuthApplicationJSONBody defines parameters for CreateOAuthApplication.
 type CreateOAuthApplicationJSONBody struct {
-	Name string `json:"name"`
+	Id string `json:"id"`
 }
 
 // UpdateAppAPIProductsJSONBody defines parameters for UpdateAppAPIProducts.

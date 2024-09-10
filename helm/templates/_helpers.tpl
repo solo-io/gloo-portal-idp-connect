@@ -15,5 +15,11 @@ gloo-portal-idp-connect args command
   - --port=8080
   - --user-pool-id={{ .Values.cognito.userPoolId }}
   - --resource-server={{ .Values.cognito.resourceServer }}
+{{- else if eq .Values.connector "keycloak"}}
+  - keycloak
+  - --port=8080
+  - --issuer={{ .Values.keycloak.realm }}
+  - --client-id={{ .Values.keycloak.mgmtClientId }}
+  - --client-secret={{ .Values.keycloak.mgmtClientSecret }}
 {{- end }}
 {{- end }}

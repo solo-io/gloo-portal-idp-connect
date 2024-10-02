@@ -109,8 +109,9 @@ func (s *StrictServerHandler) CreateOAuthApplication(
 
 	resp, err := s.restClient.R().
 		SetBody(map[string]interface{}{
-			"clientId": request.Body.Id,
-			"name":     request.Body.Id,
+			"clientId":               request.Body.Id,
+			"name":                   request.Body.Id,
+			"serviceAccountsEnabled": true,
 		}).
 		SetResult(&createdClient).
 		Post(s.issuer + "/clients-registrations/default")

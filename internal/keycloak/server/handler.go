@@ -107,7 +107,6 @@ func (s *StrictServerHandler) CreateOAuthApplication(
 
 	var createdClient KeycloakClient
 
-	// create the client
 	resp, err := s.restClient.R().
 		SetBody(map[string]interface{}{
 			"clientId":               request.Body.Id,
@@ -120,8 +119,6 @@ func (s *StrictServerHandler) CreateOAuthApplication(
 	if err != nil || resp.IsError() {
 		return portalv1.CreateOAuthApplication500JSONResponse(unwrapError(resp, err)), nil
 	}
-
-	// enable service accounts, which will allow the client to use the client_credentials flow to gain an access token
 
 	return portalv1.CreateOAuthApplication201JSONResponse{
 		ClientId:     createdClient.Name,

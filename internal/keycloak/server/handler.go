@@ -97,6 +97,7 @@ func NewStrictServerHandler(opts *Options, restyClient *resty.Client, discovered
 }
 
 // CreateOAuthApplication creates a client in Keycloak
+// TODO: Make sure to enable the client_credential flow (aka service account) for the client to get the ACCESS_TOKEN
 func (s *StrictServerHandler) CreateOAuthApplication(
 	_ context.Context,
 	request portalv1.CreateOAuthApplicationRequestObject,
@@ -107,10 +108,12 @@ func (s *StrictServerHandler) CreateOAuthApplication(
 
 	var createdClient KeycloakClient
 
+	// create the client
 	resp, err := s.restClient.R().
 		SetBody(map[string]interface{}{
-			"clientId": request.Body.Id,
-			"name":     request.Body.Id,
+			"clientId":               request.Body.Id,
+			"name":                   request.Body.Id,
+			"serviceAccountsEnabled": true,
 		}).
 		SetResult(&createdClient).
 		Post(s.issuer + "/clients-registrations/default")
@@ -118,6 +121,8 @@ func (s *StrictServerHandler) CreateOAuthApplication(
 	if err != nil || resp.IsError() {
 		return portalv1.CreateOAuthApplication500JSONResponse(unwrapError(resp, err)), nil
 	}
+
+	// enable service accounts, which will allow the client to use the client_credentials flow to gain an access token
 
 	return portalv1.CreateOAuthApplication201JSONResponse{
 		ClientId:     createdClient.Name,

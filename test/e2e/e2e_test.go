@@ -32,7 +32,7 @@ var _ = Describe("E2e", Ordered, func() {
 
 	It("can can create client", func() {
 		curlFromPod := &test.CurlFromPod{
-			Url:     "idp-connect/applications/oauth2",
+			Url:     "idp-connect/applications",
 			Cluster: env,
 			Method:  "POST",
 			Data:    fmt.Sprintf(`{"id": "%s"}`, internalClientId),

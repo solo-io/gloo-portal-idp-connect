@@ -1,8 +1,6 @@
 package server
 
 import (
-	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider/types"
-
 	portalv1 "github.com/solo-io/gloo-portal-idp-connect/pkg/api/v1"
 )
 
@@ -20,11 +18,4 @@ func newPortal400Error(reason string) portalv1.Error {
 
 func newPortal500Error(reason string) portalv1.Error {
 	return newPortalError(500, "Internal Server Error", reason)
-}
-
-func apiProductToCognitoScopeType(apiProduct portalv1.ApiProduct) types.ResourceServerScopeType {
-	return types.ResourceServerScopeType{
-		ScopeDescription: apiProduct.Description,
-		ScopeName:        &apiProduct.Name,
-	}
 }

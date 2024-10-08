@@ -6,7 +6,7 @@ openapi: 3.0.0
 servers:
   - url: https://api.gloo-platform-portal.com/v1
 paths:
-  /applications/oauth2:
+  /applications:
     post:
       description: Creates an application of type oauth2. This is intended to be integrated with an Open Id Connect Provider that the IDP Connect implementation integrates with. Note that the `clientSecret` is never stored in the database and is shown to the user only once. Keep this secret to make future requests to the API products in the Portal.
       operationId: CreateOAuthApplication
@@ -47,8 +47,8 @@ paths:
         - Applications
   /applications/{id}:
     delete:
-      description: Delete application.
-      operationId: DeleteApplication
+      description: Delete an oauth2 application.
+      operationId: DeleteOAuthApplication
       parameters:
         - in: path
           name: "id"
@@ -74,158 +74,8 @@ paths:
       summary: Deletes an application in the OpenID Connect Provider.
       tags:
         - Applications
-  /applications/{id}/api-products:
-    put:
-      description: Update application's API Products.
-      operationId: UpdateAppAPIProducts
-      parameters:
-        - in: path
-          name: "id"
-          required: true
-          description: (Required) Application ID to add API Product to.
-          schema:
-            type: string
-      requestBody:
-        description: Add API Product for a specific application.
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - apiProducts
-              properties:
-                apiProducts:
-                  type: array
-                  items:
-                    type: string
-                    example: "example-api-product"
-      responses:
-        '204':
-          description: Successfully added API Product to application.
-        '400':
-          description: Invalid input.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: Application not found.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Unexpected error adding application API Products.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      summary: Updates the set of API Products that the application has access to in the OpenID Connect Provider.
-      tags:
-        - Applications
-  /api-products:
-    post:
-      description: Creates API Product in the Open Id Connect Provider.
-      operationId: CreateAPIProduct
-      requestBody:
-        description: Create API Product for associated with your applications.
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - apiProduct
-              properties:
-                apiProduct:
-                  $ref: '#/components/schemas/ApiProduct'
-      responses:
-        '201':
-          description: Successfully created API Product.
-        '400':
-          description: Invalid input.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '409':
-          description: API Product already exists.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Unexpected error creating API Product.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      summary: Creates API Product in the OpenID Connect Provider. Then, you can add this API Product to the application for your Portal applications with the `PUT /applications/{id}/api-products` API request.
-      tags:
-        - API Products
-    get:
-      description: Get all API Products in the Open Id Connect Provider. The Portal uses the results to keep the API Products in the IdP in sync with Portal by creating and deleting as needed.
-      operationId: GetAPIProducts
-      responses:
-        '200':
-          description: Successfully retrieved API Products.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ApiProduct'
-        '500':
-          description: Unexpected error retrieving API Products.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      summary: Get all API Products in the OpenID Connect Provider.
-      tags:
-        - API Products
-  /api-products/{name}:
-    delete:
-      description: Deletes API Product in the Open Id Connect Provider for a given unique identifier.
-      operationId: DeleteAPIProduct
-      parameters:
-        - in: path
-          name: "name"
-          required: true
-          description: (Required) Name of the API Product we'd like to delete.
-          schema:
-            type: string
-      responses:
-        '204':
-          description: Successfully deleted API Product.
-        '404':
-          description: API Product not found.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Unexpected error deleting API Product.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      summary: Deletes API Product in the OpenID Connect Provider.
-      tags:
-        - API Products
 components:
   schemas:
-    ApiProduct:
-      required:
-        - name
-      properties:
-        name:
-          type: string
-          example: "example-api-product"
-        description:
-          type: string
-          example: "example API Product description"
     OAuthApplication:
       required:
         - clientId

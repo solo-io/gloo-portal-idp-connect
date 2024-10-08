@@ -16,63 +16,17 @@ import (
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// Get all API Products in the OpenID Connect Provider.
-	// (GET /api-products)
-	GetAPIProducts(ctx echo.Context) error
-	// Creates API Product in the OpenID Connect Provider. Then, you can add this API Product to the application for your Portal applications with the `PUT /applications/{id}/api-products` API request.
-	// (POST /api-products)
-	CreateAPIProduct(ctx echo.Context) error
-	// Deletes API Product in the OpenID Connect Provider.
-	// (DELETE /api-products/{name})
-	DeleteAPIProduct(ctx echo.Context, name string) error
 	// Creates an application of type oauth2.
-	// (POST /applications/oauth2)
+	// (POST /applications)
 	CreateOAuthApplication(ctx echo.Context) error
 	// Deletes an application in the OpenID Connect Provider.
 	// (DELETE /applications/{id})
-	DeleteApplication(ctx echo.Context, id string) error
-	// Updates the set of API Products that the application has access to in the OpenID Connect Provider.
-	// (PUT /applications/{id}/api-products)
-	UpdateAppAPIProducts(ctx echo.Context, id string) error
+	DeleteOAuthApplication(ctx echo.Context, id string) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
 type ServerInterfaceWrapper struct {
 	Handler ServerInterface
-}
-
-// GetAPIProducts converts echo context to params.
-func (w *ServerInterfaceWrapper) GetAPIProducts(ctx echo.Context) error {
-	var err error
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.GetAPIProducts(ctx)
-	return err
-}
-
-// CreateAPIProduct converts echo context to params.
-func (w *ServerInterfaceWrapper) CreateAPIProduct(ctx echo.Context) error {
-	var err error
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.CreateAPIProduct(ctx)
-	return err
-}
-
-// DeleteAPIProduct converts echo context to params.
-func (w *ServerInterfaceWrapper) DeleteAPIProduct(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "name" -------------
-	var name string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "name", ctx.Param("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.DeleteAPIProduct(ctx, name)
-	return err
 }
 
 // CreateOAuthApplication converts echo context to params.
@@ -84,8 +38,8 @@ func (w *ServerInterfaceWrapper) CreateOAuthApplication(ctx echo.Context) error 
 	return err
 }
 
-// DeleteApplication converts echo context to params.
-func (w *ServerInterfaceWrapper) DeleteApplication(ctx echo.Context) error {
+// DeleteOAuthApplication converts echo context to params.
+func (w *ServerInterfaceWrapper) DeleteOAuthApplication(ctx echo.Context) error {
 	var err error
 	// ------------- Path parameter "id" -------------
 	var id string
@@ -96,23 +50,7 @@ func (w *ServerInterfaceWrapper) DeleteApplication(ctx echo.Context) error {
 	}
 
 	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.DeleteApplication(ctx, id)
-	return err
-}
-
-// UpdateAppAPIProducts converts echo context to params.
-func (w *ServerInterfaceWrapper) UpdateAppAPIProducts(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "id" -------------
-	var id string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", ctx.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter id: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.UpdateAppAPIProducts(ctx, id)
+	err = w.Handler.DeleteOAuthApplication(ctx, id)
 	return err
 }
 
@@ -144,115 +82,9 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 		Handler: si,
 	}
 
-	router.GET(baseURL+"/api-products", wrapper.GetAPIProducts)
-	router.POST(baseURL+"/api-products", wrapper.CreateAPIProduct)
-	router.DELETE(baseURL+"/api-products/:name", wrapper.DeleteAPIProduct)
-	router.POST(baseURL+"/applications/oauth2", wrapper.CreateOAuthApplication)
-	router.DELETE(baseURL+"/applications/:id", wrapper.DeleteApplication)
-	router.PUT(baseURL+"/applications/:id/api-products", wrapper.UpdateAppAPIProducts)
+	router.POST(baseURL+"/applications", wrapper.CreateOAuthApplication)
+	router.DELETE(baseURL+"/applications/:id", wrapper.DeleteOAuthApplication)
 
-}
-
-type GetAPIProductsRequestObject struct {
-}
-
-type GetAPIProductsResponseObject interface {
-	VisitGetAPIProductsResponse(w http.ResponseWriter) error
-}
-
-type GetAPIProducts200JSONResponse []ApiProduct
-
-func (response GetAPIProducts200JSONResponse) VisitGetAPIProductsResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetAPIProducts500JSONResponse Error
-
-func (response GetAPIProducts500JSONResponse) VisitGetAPIProductsResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(500)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type CreateAPIProductRequestObject struct {
-	Body *CreateAPIProductJSONRequestBody
-}
-
-type CreateAPIProductResponseObject interface {
-	VisitCreateAPIProductResponse(w http.ResponseWriter) error
-}
-
-type CreateAPIProduct201Response struct {
-}
-
-func (response CreateAPIProduct201Response) VisitCreateAPIProductResponse(w http.ResponseWriter) error {
-	w.WriteHeader(201)
-	return nil
-}
-
-type CreateAPIProduct400JSONResponse Error
-
-func (response CreateAPIProduct400JSONResponse) VisitCreateAPIProductResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type CreateAPIProduct409JSONResponse Error
-
-func (response CreateAPIProduct409JSONResponse) VisitCreateAPIProductResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(409)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type CreateAPIProduct500JSONResponse Error
-
-func (response CreateAPIProduct500JSONResponse) VisitCreateAPIProductResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(500)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type DeleteAPIProductRequestObject struct {
-	Name string `json:"name"`
-}
-
-type DeleteAPIProductResponseObject interface {
-	VisitDeleteAPIProductResponse(w http.ResponseWriter) error
-}
-
-type DeleteAPIProduct204Response struct {
-}
-
-func (response DeleteAPIProduct204Response) VisitDeleteAPIProductResponse(w http.ResponseWriter) error {
-	w.WriteHeader(204)
-	return nil
-}
-
-type DeleteAPIProduct404JSONResponse Error
-
-func (response DeleteAPIProduct404JSONResponse) VisitDeleteAPIProductResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type DeleteAPIProduct500JSONResponse Error
-
-func (response DeleteAPIProduct500JSONResponse) VisitDeleteAPIProductResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(500)
-
-	return json.NewEncoder(w).Encode(response)
 }
 
 type CreateOAuthApplicationRequestObject struct {
@@ -290,78 +122,34 @@ func (response CreateOAuthApplication500JSONResponse) VisitCreateOAuthApplicatio
 	return json.NewEncoder(w).Encode(response)
 }
 
-type DeleteApplicationRequestObject struct {
+type DeleteOAuthApplicationRequestObject struct {
 	Id string `json:"id"`
 }
 
-type DeleteApplicationResponseObject interface {
-	VisitDeleteApplicationResponse(w http.ResponseWriter) error
+type DeleteOAuthApplicationResponseObject interface {
+	VisitDeleteOAuthApplicationResponse(w http.ResponseWriter) error
 }
 
-type DeleteApplication204Response struct {
+type DeleteOAuthApplication204Response struct {
 }
 
-func (response DeleteApplication204Response) VisitDeleteApplicationResponse(w http.ResponseWriter) error {
+func (response DeleteOAuthApplication204Response) VisitDeleteOAuthApplicationResponse(w http.ResponseWriter) error {
 	w.WriteHeader(204)
 	return nil
 }
 
-type DeleteApplication404JSONResponse Error
+type DeleteOAuthApplication404JSONResponse Error
 
-func (response DeleteApplication404JSONResponse) VisitDeleteApplicationResponse(w http.ResponseWriter) error {
+func (response DeleteOAuthApplication404JSONResponse) VisitDeleteOAuthApplicationResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type DeleteApplication500JSONResponse Error
+type DeleteOAuthApplication500JSONResponse Error
 
-func (response DeleteApplication500JSONResponse) VisitDeleteApplicationResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(500)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type UpdateAppAPIProductsRequestObject struct {
-	Id   string `json:"id"`
-	Body *UpdateAppAPIProductsJSONRequestBody
-}
-
-type UpdateAppAPIProductsResponseObject interface {
-	VisitUpdateAppAPIProductsResponse(w http.ResponseWriter) error
-}
-
-type UpdateAppAPIProducts204Response struct {
-}
-
-func (response UpdateAppAPIProducts204Response) VisitUpdateAppAPIProductsResponse(w http.ResponseWriter) error {
-	w.WriteHeader(204)
-	return nil
-}
-
-type UpdateAppAPIProducts400JSONResponse Error
-
-func (response UpdateAppAPIProducts400JSONResponse) VisitUpdateAppAPIProductsResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type UpdateAppAPIProducts404JSONResponse Error
-
-func (response UpdateAppAPIProducts404JSONResponse) VisitUpdateAppAPIProductsResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type UpdateAppAPIProducts500JSONResponse Error
-
-func (response UpdateAppAPIProducts500JSONResponse) VisitUpdateAppAPIProductsResponse(w http.ResponseWriter) error {
+func (response DeleteOAuthApplication500JSONResponse) VisitDeleteOAuthApplicationResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
 
@@ -370,24 +158,12 @@ func (response UpdateAppAPIProducts500JSONResponse) VisitUpdateAppAPIProductsRes
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
-	// Get all API Products in the OpenID Connect Provider.
-	// (GET /api-products)
-	GetAPIProducts(ctx context.Context, request GetAPIProductsRequestObject) (GetAPIProductsResponseObject, error)
-	// Creates API Product in the OpenID Connect Provider. Then, you can add this API Product to the application for your Portal applications with the `PUT /applications/{id}/api-products` API request.
-	// (POST /api-products)
-	CreateAPIProduct(ctx context.Context, request CreateAPIProductRequestObject) (CreateAPIProductResponseObject, error)
-	// Deletes API Product in the OpenID Connect Provider.
-	// (DELETE /api-products/{name})
-	DeleteAPIProduct(ctx context.Context, request DeleteAPIProductRequestObject) (DeleteAPIProductResponseObject, error)
 	// Creates an application of type oauth2.
-	// (POST /applications/oauth2)
+	// (POST /applications)
 	CreateOAuthApplication(ctx context.Context, request CreateOAuthApplicationRequestObject) (CreateOAuthApplicationResponseObject, error)
 	// Deletes an application in the OpenID Connect Provider.
 	// (DELETE /applications/{id})
-	DeleteApplication(ctx context.Context, request DeleteApplicationRequestObject) (DeleteApplicationResponseObject, error)
-	// Updates the set of API Products that the application has access to in the OpenID Connect Provider.
-	// (PUT /applications/{id}/api-products)
-	UpdateAppAPIProducts(ctx context.Context, request UpdateAppAPIProductsRequestObject) (UpdateAppAPIProductsResponseObject, error)
+	DeleteOAuthApplication(ctx context.Context, request DeleteOAuthApplicationRequestObject) (DeleteOAuthApplicationResponseObject, error)
 }
 
 type StrictHandlerFunc = strictecho.StrictEchoHandlerFunc
@@ -400,83 +176,6 @@ func NewStrictHandler(ssi StrictServerInterface, middlewares []StrictMiddlewareF
 type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
-}
-
-// GetAPIProducts operation middleware
-func (sh *strictHandler) GetAPIProducts(ctx echo.Context) error {
-	var request GetAPIProductsRequestObject
-
-	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
-		return sh.ssi.GetAPIProducts(ctx.Request().Context(), request.(GetAPIProductsRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetAPIProducts")
-	}
-
-	response, err := handler(ctx, request)
-
-	if err != nil {
-		return err
-	} else if validResponse, ok := response.(GetAPIProductsResponseObject); ok {
-		return validResponse.VisitGetAPIProductsResponse(ctx.Response())
-	} else if response != nil {
-		return fmt.Errorf("unexpected response type: %T", response)
-	}
-	return nil
-}
-
-// CreateAPIProduct operation middleware
-func (sh *strictHandler) CreateAPIProduct(ctx echo.Context) error {
-	var request CreateAPIProductRequestObject
-
-	var body CreateAPIProductJSONRequestBody
-	if err := ctx.Bind(&body); err != nil {
-		return err
-	}
-	request.Body = &body
-
-	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
-		return sh.ssi.CreateAPIProduct(ctx.Request().Context(), request.(CreateAPIProductRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "CreateAPIProduct")
-	}
-
-	response, err := handler(ctx, request)
-
-	if err != nil {
-		return err
-	} else if validResponse, ok := response.(CreateAPIProductResponseObject); ok {
-		return validResponse.VisitCreateAPIProductResponse(ctx.Response())
-	} else if response != nil {
-		return fmt.Errorf("unexpected response type: %T", response)
-	}
-	return nil
-}
-
-// DeleteAPIProduct operation middleware
-func (sh *strictHandler) DeleteAPIProduct(ctx echo.Context, name string) error {
-	var request DeleteAPIProductRequestObject
-
-	request.Name = name
-
-	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
-		return sh.ssi.DeleteAPIProduct(ctx.Request().Context(), request.(DeleteAPIProductRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "DeleteAPIProduct")
-	}
-
-	response, err := handler(ctx, request)
-
-	if err != nil {
-		return err
-	} else if validResponse, ok := response.(DeleteAPIProductResponseObject); ok {
-		return validResponse.VisitDeleteAPIProductResponse(ctx.Response())
-	} else if response != nil {
-		return fmt.Errorf("unexpected response type: %T", response)
-	}
-	return nil
 }
 
 // CreateOAuthApplication operation middleware
@@ -508,56 +207,25 @@ func (sh *strictHandler) CreateOAuthApplication(ctx echo.Context) error {
 	return nil
 }
 
-// DeleteApplication operation middleware
-func (sh *strictHandler) DeleteApplication(ctx echo.Context, id string) error {
-	var request DeleteApplicationRequestObject
+// DeleteOAuthApplication operation middleware
+func (sh *strictHandler) DeleteOAuthApplication(ctx echo.Context, id string) error {
+	var request DeleteOAuthApplicationRequestObject
 
 	request.Id = id
 
 	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
-		return sh.ssi.DeleteApplication(ctx.Request().Context(), request.(DeleteApplicationRequestObject))
+		return sh.ssi.DeleteOAuthApplication(ctx.Request().Context(), request.(DeleteOAuthApplicationRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "DeleteApplication")
+		handler = middleware(handler, "DeleteOAuthApplication")
 	}
 
 	response, err := handler(ctx, request)
 
 	if err != nil {
 		return err
-	} else if validResponse, ok := response.(DeleteApplicationResponseObject); ok {
-		return validResponse.VisitDeleteApplicationResponse(ctx.Response())
-	} else if response != nil {
-		return fmt.Errorf("unexpected response type: %T", response)
-	}
-	return nil
-}
-
-// UpdateAppAPIProducts operation middleware
-func (sh *strictHandler) UpdateAppAPIProducts(ctx echo.Context, id string) error {
-	var request UpdateAppAPIProductsRequestObject
-
-	request.Id = id
-
-	var body UpdateAppAPIProductsJSONRequestBody
-	if err := ctx.Bind(&body); err != nil {
-		return err
-	}
-	request.Body = &body
-
-	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
-		return sh.ssi.UpdateAppAPIProducts(ctx.Request().Context(), request.(UpdateAppAPIProductsRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "UpdateAppAPIProducts")
-	}
-
-	response, err := handler(ctx, request)
-
-	if err != nil {
-		return err
-	} else if validResponse, ok := response.(UpdateAppAPIProductsResponseObject); ok {
-		return validResponse.VisitUpdateAppAPIProductsResponse(ctx.Response())
+	} else if validResponse, ok := response.(DeleteOAuthApplicationResponseObject); ok {
+		return validResponse.VisitDeleteOAuthApplicationResponse(ctx.Response())
 	} else if response != nil {
 		return fmt.Errorf("unexpected response type: %T", response)
 	}

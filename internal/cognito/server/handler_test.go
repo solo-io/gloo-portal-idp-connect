@@ -5,7 +5,6 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	cognito "github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider/types"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -112,12 +111,12 @@ var _ = Describe("Server", func() {
 			})
 
 			It("returns not found code on deletion", func() {
-				resp, err := s.DeleteApplication(ctx, portalv1.DeleteApplicationRequestObject{
+				resp, err := s.DeleteOAuthApplication(ctx, portalv1.DeleteOAuthApplicationRequestObject{
 					Id: "test-client",
 				})
 				Expect(err).NotTo(HaveOccurred())
-				Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteApplication404JSONResponse{}))
-				resp404 := resp.(portalv1.DeleteApplication404JSONResponse)
+				Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteOAuthApplication404JSONResponse{}))
+				resp404 := resp.(portalv1.DeleteOAuthApplication404JSONResponse)
 				Expect(resp404.Code).To(Equal(404))
 			})
 		})
@@ -153,241 +152,13 @@ var _ = Describe("Server", func() {
 			})
 
 			It("can delete the client", func() {
-				resp, err := s.DeleteApplication(ctx, portalv1.DeleteApplicationRequestObject{
+				resp, err := s.DeleteOAuthApplication(ctx, portalv1.DeleteOAuthApplicationRequestObject{
 					Id: clientId,
 				})
 				Expect(err).NotTo(HaveOccurred())
-				Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteApplication204Response{}))
+				Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteOAuthApplication204Response{}))
 			})
 
-		})
-
-		Context("APIProducts", func() {
-			When("resource server does not exist", func() {
-				var resourceServerCreated bool
-				BeforeEach(func() {
-					mockCognitoClient.EXPECT().DescribeResourceServer(ctx, gomock.Any(), gomock.Any()).AnyTimes().Return(
-						nil,
-						&smithyhttp.ResponseError{
-							Response: &smithyhttp.Response{
-								Response: &http.Response{
-									StatusCode: 404,
-									Status:     "Resource Not Found",
-								},
-							},
-							Err: &types.ResourceNotFoundException{
-								Message: aws.String("resource not found"),
-							},
-						},
-					)
-
-					resourceServerCreated = false
-					// Expect that we create the resource server EXACTLY once.
-					access := resourceServer
-					mockCognitoClient.EXPECT().CreateResourceServer(ctx, gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
-						func(
-							ctx context.Context,
-							input *cognito.CreateResourceServerInput,
-							optFns ...func(*cognito.Options),
-						) (*cognito.CreateResourceServerOutput, error) {
-							if resourceServerCreated {
-								return nil, &smithyhttp.ResponseError{
-									Response: &smithyhttp.Response{
-										Response: &http.Response{
-											StatusCode: 409,
-											Status:     "Conflict",
-										},
-									},
-									Err: errors.New("resource server already exists"),
-								}
-							}
-
-							return &cognito.CreateResourceServerOutput{
-								ResourceServer: &types.ResourceServerType{
-									Identifier: &access,
-									Name:       &access,
-								},
-							}, nil
-						})
-
-					// Updating resource server is valid.
-					mockCognitoClient.EXPECT().UpdateResourceServer(ctx, gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
-						func(
-							ctx context.Context,
-							input *cognito.UpdateResourceServerInput,
-							optFns ...func(*cognito.Options),
-						) (*cognito.UpdateResourceServerOutput, error) {
-							return &cognito.UpdateResourceServerOutput{
-								ResourceServer: &types.ResourceServerType{
-									Identifier: input.Identifier,
-									Name:       input.Name,
-									Scopes:     input.Scopes,
-								},
-							}, nil
-						})
-				})
-
-				It("can create a APIProduct", func() {
-					APIProduct := "test-APIProduct"
-					resp, err := s.CreateAPIProduct(ctx, portalv1.CreateAPIProductRequestObject{
-						Body: &portalv1.CreateAPIProductJSONRequestBody{
-							ApiProduct: portalv1.ApiProduct{
-								Name:        APIProduct,
-								Description: aws.String("test description"),
-							},
-						},
-					})
-
-					Expect(err).NotTo(HaveOccurred())
-					Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateAPIProduct201Response{}))
-				})
-				It("returns not found on delete", func() {
-					resp, err := s.DeleteAPIProduct(ctx, portalv1.DeleteAPIProductRequestObject{
-						Name: "non-existant-APIProduct",
-					})
-					Expect(err).NotTo(HaveOccurred())
-					Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteAPIProduct404JSONResponse{}))
-				})
-			})
-			When("resource server exists", func() {
-				var expScope = "test-APIProduct"
-				BeforeEach(func() {
-					// Mock resource server with a single APIProduct.
-					access := resourceServer
-					mockCognitoClient.EXPECT().DescribeResourceServer(ctx, gomock.Any(), gomock.Any()).AnyTimes().Return(
-						&cognito.DescribeResourceServerOutput{
-							ResourceServer: &types.ResourceServerType{
-								Identifier: &access,
-								Name:       &access,
-								Scopes: []types.ResourceServerScopeType{
-									{
-										ScopeName:        &expScope,
-										ScopeDescription: aws.String("test description"),
-									},
-								},
-							},
-						}, nil)
-
-					// Updating resource server is valid.
-					mockCognitoClient.EXPECT().UpdateResourceServer(ctx, gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
-						func(
-							ctx context.Context,
-							input *cognito.UpdateResourceServerInput,
-							optFns ...func(*cognito.Options),
-						) (*cognito.UpdateResourceServerOutput, error) {
-							return &cognito.UpdateResourceServerOutput{
-								ResourceServer: &types.ResourceServerType{
-									Identifier: input.Identifier,
-									Name:       input.Name,
-									Scopes:     input.Scopes,
-								},
-							}, nil
-						})
-				})
-				It("can create APIProduct", func() {
-					APIProduct := "new-APIProduct"
-					resp, err := s.CreateAPIProduct(ctx, portalv1.CreateAPIProductRequestObject{
-						Body: &portalv1.CreateAPIProductJSONRequestBody{
-							ApiProduct: portalv1.ApiProduct{
-								Name:        APIProduct,
-								Description: aws.String("test description"),
-							},
-						},
-					})
-					Expect(err).NotTo(HaveOccurred())
-					Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateAPIProduct201Response{}))
-				})
-				It("returns not found if deleting APIProduct not present", func() {
-					resp, err := s.DeleteAPIProduct(ctx, portalv1.DeleteAPIProductRequestObject{
-						Name: "non-existant-APIProduct",
-					})
-					Expect(err).NotTo(HaveOccurred())
-					Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteAPIProduct404JSONResponse{}))
-				})
-
-				It("can delete the APIProduct", func() {
-					resp, err := s.DeleteAPIProduct(ctx, portalv1.DeleteAPIProductRequestObject{
-						Name: expScope,
-					})
-					Expect(err).NotTo(HaveOccurred())
-					Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteAPIProduct204Response{}))
-				})
-				It("returns that there is a resource conflict", func() {
-					resp, err := s.CreateAPIProduct(ctx, portalv1.CreateAPIProductRequestObject{
-						Body: &portalv1.CreateAPIProductJSONRequestBody{
-							ApiProduct: portalv1.ApiProduct{
-								Name:        expScope,
-								Description: aws.String("test description"),
-							},
-						},
-					})
-					Expect(err).NotTo(HaveOccurred())
-					Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateAPIProduct409JSONResponse{}))
-				})
-			})
-		})
-		Context("Client APIProducts", func() {
-			var (
-				expClient = "test-client"
-
-				expAPIProducts = []string{"tracks"}
-			)
-
-			BeforeEach(func() {
-				// Mock with a single known user and single expAPIProduct.
-				mockCognitoClient.EXPECT().UpdateUserPoolClient(ctx, gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
-					func(
-						ctx context.Context,
-						input *cognito.UpdateUserPoolClientInput,
-						optFns ...func(*cognito.Options),
-					) (*cognito.UpdateUserPoolClientOutput, error) {
-						if *input.ClientId == expClient {
-							return &cognito.UpdateUserPoolClientOutput{
-								UserPoolClient: &types.UserPoolClientType{
-									ClientId:           input.ClientId,
-									ClientName:         input.ClientName,
-									AllowedOAuthScopes: input.AllowedOAuthScopes,
-								},
-							}, nil
-						}
-
-						return nil, &smithyhttp.ResponseError{
-							Response: &smithyhttp.Response{
-								Response: &http.Response{
-									StatusCode: 404,
-									Status:     "Resource Not Found",
-								},
-							},
-							Err: &types.ResourceNotFoundException{
-								Message: aws.String("resource not found"),
-							},
-						}
-					})
-			})
-			When("client does not exist", func() {
-				It("returns not found on update", func() {
-					resp, err := s.UpdateAppAPIProducts(ctx, portalv1.UpdateAppAPIProductsRequestObject{
-						Id: "non-existant-client",
-						Body: &portalv1.UpdateAppAPIProductsJSONRequestBody{
-							ApiProducts: expAPIProducts,
-						},
-					})
-					Expect(err).NotTo(HaveOccurred())
-					Expect(resp).To(BeAssignableToTypeOf(portalv1.UpdateAppAPIProducts404JSONResponse{}))
-				})
-			})
-			When("referencing client that does exist", func() {
-				It("can update client APIProducts", func() {
-					resp, err := s.UpdateAppAPIProducts(ctx, portalv1.UpdateAppAPIProductsRequestObject{
-						Id: expClient,
-						Body: &portalv1.UpdateAppAPIProductsJSONRequestBody{
-							ApiProducts: expAPIProducts,
-						},
-					})
-					Expect(err).NotTo(HaveOccurred())
-					Expect(resp).To(BeAssignableToTypeOf(portalv1.UpdateAppAPIProducts204Response{}))
-				})
-			})
 		})
 	})
 })

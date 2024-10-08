@@ -19,12 +19,3 @@ func newPortal400Error(reason string) portalv1.Error {
 func newPortal500Error(reason string) portalv1.Error {
 	return newPortalError(500, "Internal Server Error", reason)
 }
-
-func PermissionName(clientId, apiName string) string {
-	return clientId + "/" + apiName
-}
-
-func GetApiNameFromPermission(permissionId, clientId string) string {
-	// we extract the api platform id from the permission ID, by removing the ClientID + '/' from the beginning
-	return permissionId[len(clientId)+1:]
-}

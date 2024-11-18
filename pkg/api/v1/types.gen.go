@@ -22,5 +22,17 @@ type CreateOAuthApplicationJSONBody struct {
 	Id string `json:"id"`
 }
 
+// CreateOAuthApplicationParams defines parameters for CreateOAuthApplication.
+type CreateOAuthApplicationParams struct {
+	// Token Token of origin user invoking the request.
+	Token *string `json:"token,omitempty"`
+}
+
+// DeleteOAuthApplicationParams defines parameters for DeleteOAuthApplication.
+type DeleteOAuthApplicationParams struct {
+	// Token Token of origin user invoking the request.
+	Token *string `json:"token,omitempty"`
+}
+
 // CreateOAuthApplicationJSONRequestBody defines body for CreateOAuthApplication for application/json ContentType.
 type CreateOAuthApplicationJSONRequestBody CreateOAuthApplicationJSONBody

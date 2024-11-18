@@ -10,6 +10,12 @@ paths:
     post:
       description: Creates an application of type oauth2. This is intended to be integrated with an Open Id Connect Provider that the IDP Connect implementation integrates with. Note that the `clientSecret` is never stored in the database and is shown to the user only once. Keep this secret to make future requests to the API products in the Portal.
       operationId: CreateOAuthApplication
+      parameters:
+        - in: header
+          name: "token"
+          description: Token of origin user invoking the request.
+          schema:
+            type: string
       requestBody:
         description: (Required) Unique identifier for creating client.
         required: true
@@ -54,6 +60,11 @@ paths:
           name: "id"
           required: true
           description: (Required) ID for application to delete.
+          schema:
+            type: string
+        - in: header
+          name: "token"
+          description: Token of origin user invoking the request.
           schema:
             type: string
       responses:

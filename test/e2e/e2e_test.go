@@ -37,7 +37,7 @@ var _ = Describe("E2e", Ordered, func() {
 			Method:  "POST",
 			Data:    fmt.Sprintf(`{"id": "%s"}`, internalClientId),
 			App:     "curl",
-			Headers: []string{"Content-Type: application/json"},
+			Headers: []string{"Content-Type: application/json", "token: test"},
 		}
 
 		out, err := curlFromPod.Execute()
@@ -59,6 +59,7 @@ var _ = Describe("E2e", Ordered, func() {
 			Method:  "DELETE",
 			Verbose: true,
 			App:     "curl",
+			Headers: []string{"token: test"},
 		}
 
 		out, err := curlFromPod.Execute()

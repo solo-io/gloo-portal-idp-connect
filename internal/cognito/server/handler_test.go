@@ -8,10 +8,10 @@ import (
 	cognito "github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider/types"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
-	"github.com/golang/mock/gomock"
 	_ "github.com/golang/mock/mockgen/model"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"go.uber.org/mock/gomock"
 
 	"github.com/solo-io/gloo-portal-idp-connect/internal/cognito/server"
 	"github.com/solo-io/gloo-portal-idp-connect/internal/cognito/server/mock"
@@ -101,7 +101,11 @@ var _ = Describe("Server", func() {
 			})
 
 			It("returns an error code on empty client id", func() {
+				token := "test"
 				resp, err := s.CreateOAuthApplication(ctx, portalv1.CreateOAuthApplicationRequestObject{
+					Params: portalv1.CreateOAuthApplicationParams{
+						Token: &token,
+					},
 					Body: &portalv1.CreateOAuthApplicationJSONRequestBody{
 						Id: "",
 					},
@@ -152,8 +156,12 @@ var _ = Describe("Server", func() {
 			})
 
 			It("can delete the client", func() {
+				token := "test"
 				resp, err := s.DeleteOAuthApplication(ctx, portalv1.DeleteOAuthApplicationRequestObject{
 					Id: clientId,
+					Params: portalv1.DeleteOAuthApplicationParams{
+						Token: &token,
+					},
 				})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteOAuthApplication204Response{}))

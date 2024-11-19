@@ -18,10 +18,10 @@ import (
 type ServerInterface interface {
 	// Creates an application of type oauth2.
 	// (POST /applications)
-	CreateOAuthApplication(ctx echo.Context) error
+	CreateOAuthApplication(ctx echo.Context, params CreateOAuthApplicationParams) error
 	// Deletes an application in the OpenID Connect Provider.
 	// (DELETE /applications/{id})
-	DeleteOAuthApplication(ctx echo.Context, id string) error
+	DeleteOAuthApplication(ctx echo.Context, id string, params DeleteOAuthApplicationParams) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
@@ -33,8 +33,28 @@ type ServerInterfaceWrapper struct {
 func (w *ServerInterfaceWrapper) CreateOAuthApplication(ctx echo.Context) error {
 	var err error
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateOAuthApplicationParams
+
+	headers := ctx.Request().Header
+	// ------------- Optional header parameter "token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("token")]; found {
+		var Token string
+		n := len(valueList)
+		if n != 1 {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Expected one value for token, got %d", n))
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "token", valueList[0], &Token, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter token: %s", err))
+		}
+
+		params.Token = &Token
+	}
+
 	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.CreateOAuthApplication(ctx)
+	err = w.Handler.CreateOAuthApplication(ctx, params)
 	return err
 }
 
@@ -49,8 +69,28 @@ func (w *ServerInterfaceWrapper) DeleteOAuthApplication(ctx echo.Context) error 
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter id: %s", err))
 	}
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DeleteOAuthApplicationParams
+
+	headers := ctx.Request().Header
+	// ------------- Optional header parameter "token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("token")]; found {
+		var Token string
+		n := len(valueList)
+		if n != 1 {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Expected one value for token, got %d", n))
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "token", valueList[0], &Token, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter token: %s", err))
+		}
+
+		params.Token = &Token
+	}
+
 	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.DeleteOAuthApplication(ctx, id)
+	err = w.Handler.DeleteOAuthApplication(ctx, id, params)
 	return err
 }
 
@@ -88,7 +128,8 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 }
 
 type CreateOAuthApplicationRequestObject struct {
-	Body *CreateOAuthApplicationJSONRequestBody
+	Params CreateOAuthApplicationParams
+	Body   *CreateOAuthApplicationJSONRequestBody
 }
 
 type CreateOAuthApplicationResponseObject interface {
@@ -123,7 +164,8 @@ func (response CreateOAuthApplication500JSONResponse) VisitCreateOAuthApplicatio
 }
 
 type DeleteOAuthApplicationRequestObject struct {
-	Id string `json:"id"`
+	Id     string `json:"id"`
+	Params DeleteOAuthApplicationParams
 }
 
 type DeleteOAuthApplicationResponseObject interface {
@@ -179,8 +221,10 @@ type strictHandler struct {
 }
 
 // CreateOAuthApplication operation middleware
-func (sh *strictHandler) CreateOAuthApplication(ctx echo.Context) error {
+func (sh *strictHandler) CreateOAuthApplication(ctx echo.Context, params CreateOAuthApplicationParams) error {
 	var request CreateOAuthApplicationRequestObject
+
+	request.Params = params
 
 	var body CreateOAuthApplicationJSONRequestBody
 	if err := ctx.Bind(&body); err != nil {
@@ -208,10 +252,11 @@ func (sh *strictHandler) CreateOAuthApplication(ctx echo.Context) error {
 }
 
 // DeleteOAuthApplication operation middleware
-func (sh *strictHandler) DeleteOAuthApplication(ctx echo.Context, id string) error {
+func (sh *strictHandler) DeleteOAuthApplication(ctx echo.Context, id string, params DeleteOAuthApplicationParams) error {
 	var request DeleteOAuthApplicationRequestObject
 
 	request.Id = id
+	request.Params = params
 
 	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
 		return sh.ssi.DeleteOAuthApplication(ctx.Request().Context(), request.(DeleteOAuthApplicationRequestObject))

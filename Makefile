@@ -32,7 +32,7 @@ mod-download:
 .PHONY: install-go-tools
 install-go-tools: mod-download
 	mkdir -p $(DEPSGOBIN)
-	go install go.uber.org/mock/mockgen@latest
+	go install go.uber.org/mock/mockgen@v0.5.0
 	go install github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
 
 # Run go-generate on all sub-packages. This generates mocks and primitives used in the portal API implementation.

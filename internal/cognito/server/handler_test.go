@@ -8,10 +8,10 @@ import (
 	cognito "github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider/types"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
-	"github.com/golang/mock/gomock"
 	_ "github.com/golang/mock/mockgen/model"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"go.uber.org/mock/gomock"
 
 	"github.com/solo-io/gloo-portal-idp-connect/internal/cognito/server"
 	"github.com/solo-io/gloo-portal-idp-connect/internal/cognito/server/mock"
@@ -30,6 +30,7 @@ var _ = Describe("Server", func() {
 		mockCognitoClient   *mock_server.MockCognitoClient
 		ctx                 context.Context
 		applicationClientId = "client-internal-id"
+		testToken           = "test"
 	)
 
 	BeforeEach(func() {
@@ -85,6 +86,9 @@ var _ = Describe("Server", func() {
 					Body: &portalv1.CreateOAuthApplicationJSONRequestBody{
 						Id: applicationClientId,
 					},
+					Params: portalv1.CreateOAuthApplicationParams{
+						Token: &testToken,
+					},
 				})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateOAuthApplication201JSONResponse{}))
@@ -102,6 +106,9 @@ var _ = Describe("Server", func() {
 
 			It("returns an error code on empty client id", func() {
 				resp, err := s.CreateOAuthApplication(ctx, portalv1.CreateOAuthApplicationRequestObject{
+					Params: portalv1.CreateOAuthApplicationParams{
+						Token: &testToken,
+					},
 					Body: &portalv1.CreateOAuthApplicationJSONRequestBody{
 						Id: "",
 					},
@@ -113,6 +120,9 @@ var _ = Describe("Server", func() {
 			It("returns not found code on deletion", func() {
 				resp, err := s.DeleteOAuthApplication(ctx, portalv1.DeleteOAuthApplicationRequestObject{
 					Id: "test-client",
+					Params: portalv1.DeleteOAuthApplicationParams{
+						Token: &testToken,
+					},
 				})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteOAuthApplication404JSONResponse{}))
@@ -154,6 +164,9 @@ var _ = Describe("Server", func() {
 			It("can delete the client", func() {
 				resp, err := s.DeleteOAuthApplication(ctx, portalv1.DeleteOAuthApplicationRequestObject{
 					Id: clientId,
+					Params: portalv1.DeleteOAuthApplicationParams{
+						Token: &testToken,
+					},
 				})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteOAuthApplication204Response{}))

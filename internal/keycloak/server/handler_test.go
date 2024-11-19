@@ -39,6 +39,7 @@ var _ = Describe("Server", func() {
 			Name:   applicationClientId,
 			Secret: applicationClientSecret,
 		}
+		testToken = "test"
 	)
 
 	BeforeEach(func() {
@@ -80,6 +81,9 @@ var _ = Describe("Server", func() {
 					Body: &portalv1.CreateOAuthApplicationJSONRequestBody{
 						Id: applicationClientId,
 					},
+					Params: portalv1.CreateOAuthApplicationParams{
+						Token: &testToken,
+					},
 				})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateOAuthApplication201JSONResponse{}))
@@ -100,6 +104,9 @@ var _ = Describe("Server", func() {
 					Body: &portalv1.CreateOAuthApplicationJSONRequestBody{
 						Id: "",
 					},
+					Params: portalv1.CreateOAuthApplicationParams{
+						Token: &testToken,
+					},
 				})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(resp).To(BeAssignableToTypeOf(portalv1.CreateOAuthApplication400JSONResponse{}))
@@ -108,6 +115,9 @@ var _ = Describe("Server", func() {
 			It("returns not found code on deletion", func() {
 				resp, err := s.DeleteOAuthApplication(ctx, portalv1.DeleteOAuthApplicationRequestObject{
 					Id: "non-existing-client",
+					Params: portalv1.DeleteOAuthApplicationParams{
+						Token: &testToken,
+					},
 				})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteOAuthApplication404JSONResponse{}))
@@ -128,6 +138,9 @@ var _ = Describe("Server", func() {
 			It("can delete the client", func() {
 				resp, err := s.DeleteOAuthApplication(ctx, portalv1.DeleteOAuthApplicationRequestObject{
 					Id: applicationClientId,
+					Params: portalv1.DeleteOAuthApplicationParams{
+						Token: &testToken,
+					},
 				})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(resp).To(BeAssignableToTypeOf(portalv1.DeleteOAuthApplication204Response{}))

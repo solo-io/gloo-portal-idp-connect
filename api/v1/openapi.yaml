@@ -1,14 +1,14 @@
 info:
-  title: 'Gloo Gateway Portal IDP Connect API'
+  title: 'Gloo Portal IdP Connect API'
   version: 1.0.0
-  description: Before you begin, set up Gloo Gateway Portal with your OpenID Connect (OIDC) provider. Then with this IDP Connect API, you can manage the clients and API Products in your OIDC provider that get associated with your Portal applications. For more information, see the [Gloo Gateway Portal docs](https://docs.solo.io/gloo-portal/latest/).
+  description: Before you begin, set up Gloo Portal with your OpenID Connect (OIDC) provider, and install IdP Connect to integrate it with your Gloo Gateway installation. Then, you can use this IdP Connect API to manage the clients in your OIDC provider that are associated with your Portal apps. For more information, see the [Portal OAuth guide](https://docs.solo.io/gateway/latest/portal/guides/frontend-portal/credential-management/oauth/) in the Gloo Gateway docs.
 openapi: 3.0.0
 servers:
   - url: https://api.gloo-platform-portal.com/v1
 paths:
   /applications:
     post:
-      description: Creates an application of type oauth2. This is intended to be integrated with an Open Id Connect Provider that the IDP Connect implementation integrates with. Note that the `clientSecret` is never stored in the database and is shown to the user only once. Keep this secret to make future requests to the API products in the Portal.
+      description: Create an OAuth2 client by using the OIDC provider that you use to protect your Gloo Portal APIs. Note that the `clientSecret` is never stored in the database. Additionally, this secret is shown to you only once at creation time, so keep this secret to make future requests to API products in the Portal.
       operationId: CreateOAuthApplication
       parameters:
         - in: header
@@ -48,18 +48,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-      summary: Creates an application of type oauth2.
+      summary: Creates an OAuth2 client.
       tags:
         - Applications
   /applications/{id}:
     delete:
-      description: Delete an oauth2 application.
+      description: Delete an OAuth2 client.
       operationId: DeleteOAuthApplication
       parameters:
         - in: path
           name: "id"
           required: true
-          description: (Required) ID for application to delete.
+          description: (Required) ID for client to delete.
           schema:
             type: string
         - in: header
@@ -69,7 +69,7 @@ paths:
             type: string
       responses:
         '204':
-          description: Successfully deleted application.
+          description: Successfully deleted client.
         '404':
           description: Application not found.
           content:
@@ -77,12 +77,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '500':
-          description: Unexpected error deleting application.
+          description: Unexpected error deleting client.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-      summary: Deletes an application in the OpenID Connect Provider.
+      summary: Delete a client in the OIDC provider.
       tags:
         - Applications
 components:

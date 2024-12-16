@@ -1,14 +1,14 @@
 info:
   title: 'Gloo Portal IdP Connect API'
   version: 1.0.0
-  description: Before you begin, set up Gloo Portal with your OpenID Connect (OIDC) provider, and install IdP Connect to integrate it with your Gloo Gateway installation. Then, you can use this IdP Connect API to manage the clients in your OIDC provider that are associated with your Portal apps. For more information, see the [Portal OAuth guide](https://docs.solo.io/gateway/latest/portal/guides/frontend-portal/credential-management/oauth/) in the Gloo Gateway docs.
+  description: Before you begin, set up Gloo Portal with your OpenID Connect (OIDC) Identity Provider (IdP), and install IdP Connect to integrate it with your Gloo Gateway installation. Then, you can use this IdP Connect API to manage the clients in your OIDC provider that are associated with your Portal apps. This way, your Portal users can provision their own OAuth credentials to access the Portal apps. For more information, see the [Portal OAuth guide](https://docs.solo.io/gateway/latest/portal/guides/frontend-portal/credential-management/oauth/) in the Gloo Gateway docs.
 openapi: 3.0.0
 servers:
   - url: https://api.gloo-platform-portal.com/v1
 paths:
   /applications:
     post:
-      description: Create an OAuth2 client by using the OIDC provider that you use to protect your Gloo Portal APIs. Note that the `clientSecret` is never stored in the database. Additionally, this secret is shown to you only once at creation time, so keep this secret to make future requests to API products in the Portal.
+      description: Create an OAuth2 client in the OIDC provider that you set up to protect your Gloo Portal APIs. This secret is shown to you only once at creation time, so keep this secret to make future requests to API products in the Portal. If you lose this secret, your admin can retrieve it in the OIDC provider. Note that the secret is not stored in the Portal database.
       operationId: CreateOAuthApplication
       parameters:
         - in: header

@@ -7,7 +7,7 @@ on:
 jobs:
   set-version: # Get version as first job to re-use the value without needing to re-calculate it.
     name: Set Version for Dev Release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
       version: ${{ steps.set_version.outputs.version }}
@@ -26,7 +26,7 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Set version to $VERSION"
   docker-release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [set-version]
     steps:
       - name: Checkout
@@ -47,7 +47,7 @@ jobs:
   release-helm:
     name: Release gloo-portal-idp-connect helm chart
     needs: [set-version]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.4.0

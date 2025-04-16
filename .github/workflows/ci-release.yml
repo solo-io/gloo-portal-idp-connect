@@ -44,13 +44,19 @@ jobs:
           access_token: ${{ github.token }}
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Gcloud Login
-        uses: google-github-actions/setup-gcloud@a48b55b3b0eeaf77b6e1384aab737fbefe2085ac
+
+      - name: Gcloud Auth
+        uses: google-github-actions/auth@v2
         with:
-          version: '386.0.0'
+          credentials_json: ${{ secrets.GLOO_RELEASE_ADMIN }}
           project_id: gloo-mesh
-          service_account_key: ${{ secrets.GLOO_RELEASE_ADMIN }}
-          export_default_credentials: true
+          create_credentials_file: true
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          version: 416.0.0
+
       - name: Publish Helm
         env:
           TAGGED_VERSION: ${{ github.event.release.tag_name }}

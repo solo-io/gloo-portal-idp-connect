@@ -7,7 +7,7 @@ on:
 jobs:
   set-version: # Get version as first job to re-use the value without needing to re-calculate it.
     name: Set Version for Dev Release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
       version: ${{ steps.set_version.outputs.version }}
@@ -26,18 +26,24 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Set version to $VERSION"
   docker-release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [set-version]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Gcloud Login
-        uses: google-github-actions/setup-gcloud@a48b55b3b0eeaf77b6e1384aab737fbefe2085ac
+
+      - name: Gcloud Auth
+        uses: google-github-actions/auth@v2
         with:
-          version: '386.0.0'
+          credentials_json: ${{ secrets.ARTIFACT_PUSHER_JSON_KEY }}
           project_id: gloo-mesh
-          service_account_key: ${{ secrets.ARTIFACT_PUSHER_JSON_KEY }}
-          export_default_credentials: true
+          create_credentials_file: true
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          version: 416.0.0
+
       - name: Publish Docker image
         env:
           TAGGED_VERSION: ${{ needs.set-version.outputs.version }}
@@ -47,7 +53,7 @@ jobs:
   release-helm:
     name: Release gloo-portal-idp-connect helm chart
     needs: [set-version]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.4.0
@@ -55,13 +61,19 @@ jobs:
           access_token: ${{ github.token }}
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Gcloud Login
-        uses: google-github-actions/setup-gcloud@a48b55b3b0eeaf77b6e1384aab737fbefe2085ac
+
+      - name: Gcloud Auth
+        uses: google-github-actions/auth@v2
         with:
-          version: '386.0.0'
+          credentials_json: ${{ secrets.GLOO_RELEASE_ADMIN }}
           project_id: gloo-mesh
-          service_account_key: ${{ secrets.GLOO_RELEASE_ADMIN }}
-          export_default_credentials: true
+          create_credentials_file: true
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          version: 416.0.0
+
       - name: Publish Helm
         env:
           TAGGED_VERSION: ${{ needs.set-version.outputs.version }}

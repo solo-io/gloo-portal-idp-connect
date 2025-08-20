@@ -1,5 +1,3 @@
-version: "2"
-
 run:
   timeout: 5m
   tests: false # Don't run linters on test files to avoid issues with Ginkgo dot imports

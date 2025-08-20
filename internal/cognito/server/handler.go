@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	cognito "github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider/types"

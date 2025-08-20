@@ -2,6 +2,7 @@ package server_test
 
 import (
 	"context"
+
 	resty "github.com/go-resty/resty/v2"
 	_ "github.com/golang/mock/mockgen/model"
 	"github.com/jarcoal/httpmock"

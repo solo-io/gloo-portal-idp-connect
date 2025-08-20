@@ -78,13 +78,11 @@ func (s *StrictServerHandler) DeleteOAuthApplication(
 	})
 
 	if err != nil {
-		if err != nil {
-			switch cognitoErr := unwrapCognitoError(err); cognitoErr.Code {
-			case 404:
-				return portalv1.DeleteOAuthApplication404JSONResponse(cognitoErr), nil
-			default:
-				return portalv1.DeleteOAuthApplication500JSONResponse(cognitoErr), nil
-			}
+		switch cognitoErr := unwrapCognitoError(err); cognitoErr.Code {
+		case 404:
+			return portalv1.DeleteOAuthApplication404JSONResponse(cognitoErr), nil
+		default:
+			return portalv1.DeleteOAuthApplication500JSONResponse(cognitoErr), nil
 		}
 	}
 

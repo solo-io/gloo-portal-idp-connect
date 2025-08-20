@@ -1,0 +1,22 @@
+version: "2"
+
+run:
+  timeout: 5m
+  tests: false # Don't run linters on test files to avoid issues with Ginkgo dot imports
+
+linters:
+  enable:
+  - errcheck
+  - gosimple
+  - govet
+  - ineffassign
+  - staticcheck
+  - typecheck
+  - unused
+  - gofmt
+  - goimports
+  - misspell
+  - goconst
+  - gosec
+
+# Issues configuration removed due to schema restrictions

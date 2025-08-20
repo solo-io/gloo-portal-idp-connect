@@ -55,6 +55,7 @@ PACKAGED_CHART_DIR ?= $(HELM_SYNC_DIR)/charts
 # package helm release
 .PHONY: package-helm
 package-helm: helm-install set-version
+	cat $(CHART_DIR)/Chart.yaml
 	mkdir -p $(PACKAGED_CHART_DIR)
 	helm package --destination $(PACKAGED_CHART_DIR) $(CHART_DIR)
 

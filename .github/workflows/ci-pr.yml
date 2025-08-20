@@ -48,7 +48,7 @@ jobs:
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
     env:
       AWS_REGION: us-west-2
-      GO_VERSION: 1.21.5
+      GO_VERSION: 1.23.0
       KUBECTL_VERSION: 1.29.1
       HELM_VERSION: v3.12.3
       KIND_VERSION: v0.19.0

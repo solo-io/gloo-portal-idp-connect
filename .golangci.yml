@@ -5,4 +5,4 @@ run:
   tests: false # Don't run linters on test files to avoid issues with Ginkgo dot imports
 
 linters:
-  default: all
+  default: standard

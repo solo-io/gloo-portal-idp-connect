@@ -1,4 +1,4 @@
-name: gloo-portal-idp-connect CI
+name: Pull Request Checks
 
 on:
   push:
@@ -14,15 +14,22 @@ on:
     - '.ci/**'
     - '**/*.md'
 
+env:
+  GO_VERSION: 1.24.6
+  AWS_REGION: us-west-2
+  KUBECTL_VERSION: 1.33.4
+  HELM_VERSION: v3.18.6
+  KIND_VERSION: v0.29.0
+
 jobs:
   style-check:
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Go
-      uses: actions/setup-go@v3
+      uses: actions/setup-go@v4
       with:
-        go-version: 1.21.1
+        go-version: ${{ env.GO_VERSION }}
     - name: golangci-lint
       uses: golangci/golangci-lint-action@v8
       with:
@@ -31,11 +38,11 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [ style-check ]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Go
-      uses: actions/setup-go@v3
+      uses: actions/setup-go@v4
       with:
-        go-version: 1.21.1
+        go-version: ${{ env.GO_VERSION }}
     - name: install-tools
       run: make install-go-tools
     - name: Test
@@ -43,14 +50,6 @@ jobs:
   e2e-test:
     runs-on: ubuntu-24.04
     needs: [ style-check ]
-    # Only run e2e tests if AWS credentials are available
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
-    env:
-      AWS_REGION: us-west-2
-      GO_VERSION: 1.23.0
-      KUBECTL_VERSION: 1.29.1
-      HELM_VERSION: v3.12.3
-      KIND_VERSION: v0.19.0
     steps:
     - uses: actions/checkout@v4
       with:
@@ -59,29 +58,24 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
-
     - name: Install kubectl
       run: |
-        curl -LO "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+        curl -LO "https://dl.k8s.io/release/v${{ env.KUBECTL_VERSION }}/bin/linux/amd64/kubectl"
         chmod +x kubectl
         sudo mv kubectl /usr/local/bin/
         kubectl version --client
-
     - name: Install helm
       uses: azure/setup-helm@v3
       with:
         version: ${{ env.HELM_VERSION }}
-
     - name: Install kind
       run: |
-        curl -Lo ./kind "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64"
+        curl -Lo ./kind "https://kind.sigs.k8s.io/dl/${{ env.KIND_VERSION }}/kind-linux-amd64"
         chmod +x ./kind
         sudo mv ./kind /usr/local/bin/
         kind version
-
     - name: Install Go tools
       run: make install-go-tools
-
     - name: Run e2e tests
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

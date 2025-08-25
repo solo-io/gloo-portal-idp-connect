@@ -1,4 +1,4 @@
-package kubectl
+package utils_test
 
 import (
 	"bytes"
@@ -9,8 +9,6 @@ import (
 	"os/exec"
 	"strings"
 )
-
-const AllSelector = "*"
 
 type KubectlVersion struct {
 	ClientVersion struct {
@@ -40,14 +38,14 @@ func (k *Kubectl) Execute(ctx context.Context, stdin *bytes.Buffer, args ...stri
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = io.MultiWriter(&stdout, k.Receiver)
 	cmd.Stderr = io.MultiWriter(&stderr, k.Receiver)
-	fmt.Fprintf(k.Receiver, "Executing: %s \n", strings.Join(cmd.Args, " "))
+	_, _ = fmt.Fprintf(k.Receiver, "Executing: %s \n", strings.Join(cmd.Args, " "))
 
 	err := cmd.Run()
 
 	return stdout.String(), stderr.String(), err
 }
 
-// Wrapper around Execute that allows specifying a kube context
+// ExecuteOn is a wrapper around Execute that allows specifying a kube context
 func (k *Kubectl) ExecuteOn(ctx context.Context, kubeContext string, stdin *bytes.Buffer, args ...string) (
 	string,
 	string,

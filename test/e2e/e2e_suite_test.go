@@ -6,11 +6,10 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	. "github.com/solo-io/gloo-portal-idp-connect/test"
+	utils_test "github.com/solo-io/gloo-portal-idp-connect/test/utils"
 )
 
-var env *KubeContext
+var env *utils_test.KubeContext
 
 func TestE2e(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -19,7 +18,7 @@ func TestE2e(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	var err error
-	env, err = NewKubeContext("kind-kind")
+	env, err = utils_test.NewKubeContext("kind-kind")
 	Expect(err).NotTo(HaveOccurred())
 
 	env.CheckPodsInCluster(context.Background())

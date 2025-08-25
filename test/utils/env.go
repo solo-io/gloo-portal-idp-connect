@@ -1,4 +1,4 @@
-package test
+package utils_test
 
 import (
 	"context"
@@ -20,8 +20,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/solo-io/gloo-portal-idp-connect/test/utils/kubectl"
 )
 
 var scheme = runtime.NewScheme()
@@ -33,7 +31,7 @@ func init() {
 type KubeContext struct {
 	client     client.Client
 	kubeClient *kubernetes.Clientset
-	kubectl    *kubectl.Kubectl
+	kubectl    *Kubectl
 
 	Context string
 }
@@ -47,7 +45,7 @@ func NewKubeContext(kubeCtx string) (*KubeContext, error) {
 	return &KubeContext{
 		client:     client,
 		kubeClient: kubeClient,
-		kubectl:    kubectl.NewKubectl(GinkgoWriter),
+		kubectl:    NewKubectl(GinkgoWriter),
 		Context:    kubeCtx,
 	}, nil
 }
@@ -242,11 +240,11 @@ func (k *KubeContext) CheckPodsInCluster(ctx context.Context) {
 			pod := &pl.Items[i]
 
 			// Could capture pods that are pending or in the process of termination
-			if !IsPodConditionReady(pod, corev1.PodReady) {
+			if !isPodConditionReady(pod, corev1.PodReady) {
 				return false
 			}
 
-			if !IsPodConditionReady(pod, corev1.ContainersReady) {
+			if !isPodConditionReady(pod, corev1.ContainersReady) {
 				return false
 			}
 		}
@@ -259,8 +257,8 @@ func (k *KubeContext) CheckPodsInCluster(ctx context.Context) {
 	}, "90s").Should(Succeed())
 }
 
-// IsPodConditionReady returns true if the pod condition is ready
-func IsPodConditionReady(pod *corev1.Pod, conditionType corev1.PodConditionType) bool {
+// isPodConditionReady returns true if the pod condition is ready
+func isPodConditionReady(pod *corev1.Pod, conditionType corev1.PodConditionType) bool {
 	for _, condition := range pod.Status.Conditions {
 		if condition.Type == conditionType && condition.Status == corev1.ConditionTrue {
 			return true

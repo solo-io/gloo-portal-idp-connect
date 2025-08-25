@@ -14,7 +14,7 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/solo-io/gloo-portal-idp-connect/internal/cognito/server"
-	"github.com/solo-io/gloo-portal-idp-connect/internal/cognito/server/mock"
+	mock_server "github.com/solo-io/gloo-portal-idp-connect/internal/cognito/server/mock"
 	portalv1 "github.com/solo-io/gloo-portal-idp-connect/pkg/api/v1"
 )
 

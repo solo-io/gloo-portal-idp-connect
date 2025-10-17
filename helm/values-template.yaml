@@ -7,7 +7,7 @@ image:
 service:
   # Port for IDP Connect service to listen on. This is also the port the service will be configured to listen on.
   port: 80
-# Connector to use in IDP connect sample. Supported connectors are: 'cognito' and 'keycloak'
+# Connector to use in IDP connect sample. Supported connectors are: 'cognito', 'keycloak', and 'okta'
 connector: cognito
 # Configuration for the cognito connector
 cognito:
@@ -34,6 +34,14 @@ keycloak:
   mgmtClientId: ""
   # (Required) Secret of the Keycloak client that is authorised to manage app clients
   mgmtClientSecret: ""
+# Configuration for the okta connector
+okta:
+  # (Required) Okta domain URL (e.g. https://dev-123456.okta.com)
+  domain: ""
+  # (Required) Okta API token for application management
+  apiToken: ""
+  # (Required) Name of the secret containing Okta API token
+  secretName: okta-api
 resources:
   container:
     limit:

@@ -1,0 +1,11 @@
+# Connector to use in IDP connect sample. Supported connectors are: 'cognito', 'keycloak', and 'okta'
+connector: okta
+# Configuration for the okta connector
+okta:
+  # (Required) Okta domain URL (e.g. https://dev-123456.okta.com)
+  domain: "https://dev-123456.okta.com"
+  # (Required) Okta API token for application management
+  # This should be the actual API token value, which will be base64 encoded in the secret
+  apiToken: "your-okta-api-token-here"
+  # (Required) Name of the secret containing Okta API token
+  secretName: okta-api

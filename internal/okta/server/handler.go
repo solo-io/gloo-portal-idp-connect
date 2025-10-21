@@ -69,7 +69,8 @@ func (s *StrictServerHandler) CreateOAuthApplication(
 	settings := okta.NewOpenIdConnectApplicationSettings()
 	oauthClientSettings := okta.NewOpenIdConnectApplicationSettingsClient()
 	oauthClientSettings.SetGrantTypes([]string{"client_credentials"})
-	oauthClientSettings.SetResponseTypes([]string{"token"})
+	// Note: response_types is not needed for client_credentials grant type
+	// It's only used for authorization flows with redirects
 	oauthClientSettings.SetApplicationType("service")
 	oauthClientSettings.SetConsentMethod("TRUSTED")
 	oauthClientSettings.SetIssuerMode("ORG_URL")

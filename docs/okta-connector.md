@@ -50,7 +50,7 @@ okta:
 ```bash
 helm upgrade -i -n gloo-system \
   portal-idp gloo-portal-idp-connect/gloo-portal-idp-connect \
-  --version 0.3.0 \
+  --version 0.5.0 \
   -f values-okta.yaml
 ```
 

@@ -2,154 +2,124 @@ package server
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"strings"
+	"net/http"
 
-	resty "github.com/go-resty/resty/v2"
+	"github.com/okta/okta-sdk-golang/v5/okta"
 	portalv1 "github.com/solo-io/gloo-portal-idp-connect/pkg/api/v1"
 )
 
+//go:generate mockgen -destination=mock/okta_client.go . OktaClient,ApplicationAPI,ApiCreateApplicationRequest,ApiListApplicationsRequest,ApiDeactivateApplicationRequest,ApiDeleteApplicationRequest
+
+type OktaClient interface {
+	GetApplicationAPI() ApplicationAPI
+}
+
+type ApplicationAPI interface {
+	CreateApplication(ctx context.Context) ApiCreateApplicationRequest
+	ListApplications(ctx context.Context) ApiListApplicationsRequest
+	DeactivateApplication(ctx context.Context, appId string) ApiDeactivateApplicationRequest
+	DeleteApplication(ctx context.Context, appId string) ApiDeleteApplicationRequest
+}
+
+type ApiCreateApplicationRequest interface {
+	Application(application okta.ListApplications200ResponseInner) ApiCreateApplicationRequest
+	Execute() (*okta.ListApplications200ResponseInner, *okta.APIResponse, error)
+}
+
+type ApiListApplicationsRequest interface {
+	Execute() ([]okta.ListApplications200ResponseInner, *okta.APIResponse, error)
+}
+
+type ApiDeactivateApplicationRequest interface {
+	Execute() (*okta.APIResponse, error)
+}
+
+type ApiDeleteApplicationRequest interface {
+	Execute() (*okta.APIResponse, error)
+}
+
 type StrictServerHandler struct {
-	restClient *resty.Client
-	oktaDomain string
-	apiToken   string
+	oktaClient OktaClient
 }
 
-type OktaApplication struct {
-	Id          string           `json:"id,omitempty"`
-	Name        string           `json:"name"`
-	Label       string           `json:"label"`
-	Status      string           `json:"status,omitempty"`
-	SignOnMode  string           `json:"signOnMode"`
-	Credentials *OktaCredentials `json:"credentials,omitempty"`
-	Settings    *OktaSettings    `json:"settings,omitempty"`
-}
-
-type OktaCredentials struct {
-	OAuthClient *OktaOAuthClient `json:"oauthClient,omitempty"`
-}
-
-type OktaOAuthClient struct {
-	ClientId                string `json:"client_id,omitempty"`
-	ClientSecret            string `json:"client_secret,omitempty"`
-	TokenEndpointAuthMethod string `json:"token_endpoint_auth_method,omitempty"`
-	ClientUri               string `json:"client_uri,omitempty"`
-}
-
-type OktaSettings struct {
-	OAuthClient *OktaOAuthClientSettings `json:"oauthClient,omitempty"`
-}
-
-type OktaOAuthClientSettings struct {
-	ClientUri       string   `json:"client_uri,omitempty"`
-	LogoUri         string   `json:"logo_uri,omitempty"`
-	RedirectUris    []string `json:"redirect_uris,omitempty"`
-	ResponseTypes   []string `json:"response_types,omitempty"`
-	GrantTypes      []string `json:"grant_types,omitempty"`
-	ApplicationType string   `json:"application_type,omitempty"`
-	ConsentMethod   string   `json:"consent_method,omitempty"`
-	IssuerMode      string   `json:"issuer_mode,omitempty"`
-}
-
-type OktaError struct {
-	ErrorCode    string `json:"errorCode"`
-	ErrorSummary string `json:"errorSummary"`
-	ErrorLink    string `json:"errorLink,omitempty"`
-	ErrorId      string `json:"errorId,omitempty"`
-}
-
-func NewStrictServerHandler(opts *Options, restyClient *resty.Client) *StrictServerHandler {
-	// Set up authentication for all requests
-	restyClient.OnBeforeRequest(func(c *resty.Client, r *resty.Request) error {
-		r.SetHeader("Authorization", "SSWS "+opts.APIToken)
-		r.SetHeader("Accept", "application/json")
-		r.SetHeader("Content-Type", "application/json")
-		r.SetError(&OktaError{})
-		return nil
-	})
-
+func NewStrictServerHandler(oktaClient OktaClient) *StrictServerHandler {
 	return &StrictServerHandler{
-		restClient: restyClient,
-		oktaDomain: opts.OktaDomain,
-		apiToken:   opts.APIToken,
+		oktaClient: oktaClient,
 	}
 }
 
 // CreateOAuthApplication creates a client in Okta
 func (s *StrictServerHandler) CreateOAuthApplication(
-	_ context.Context,
+	ctx context.Context,
 	request portalv1.CreateOAuthApplicationRequestObject,
 ) (portalv1.CreateOAuthApplicationResponseObject, error) {
 	if request.Body == nil || len(request.Body.Id) == 0 {
 		return portalv1.CreateOAuthApplication400JSONResponse(newPortal400Error("unique id is required")), nil
 	}
 
-	// Create OAuth 2.0 Service Application in Okta
-	app := OktaApplication{
-		Name:       "oidc_client", // Use correct Okta application name
-		Label:      request.Body.Id,
-		SignOnMode: "OPENID_CONNECT",
-		Credentials: &OktaCredentials{
-			OAuthClient: &OktaOAuthClient{
-				TokenEndpointAuthMethod: "client_secret_basic",
-			},
-		},
-		Settings: &OktaSettings{
-			OAuthClient: &OktaOAuthClientSettings{
-				GrantTypes:      []string{"client_credentials"},
-				ApplicationType: "service",
-				ConsentMethod:   "TRUSTED",
-				IssuerMode:      "ORG_URL",
-			},
-		},
-	}
+	// Create OAuth 2.0 Service Application in Okta using SDK
+	// Set credentials
+	credentials := okta.NewOAuthApplicationCredentials()
+	oauthClient := okta.NewApplicationCredentialsOAuthClient()
+	oauthClient.SetTokenEndpointAuthMethod("client_secret_basic")
+	credentials.SetOauthClient(*oauthClient)
 
-	var createdApp OktaApplication
+	// Set settings
+	settings := okta.NewOpenIdConnectApplicationSettings()
+	oauthClientSettings := okta.NewOpenIdConnectApplicationSettingsClient()
+	oauthClientSettings.SetGrantTypes([]string{"client_credentials"})
+	oauthClientSettings.SetResponseTypes([]string{"token"})
+	oauthClientSettings.SetApplicationType("service")
+	oauthClientSettings.SetConsentMethod("TRUSTED")
+	oauthClientSettings.SetIssuerMode("ORG_URL")
+	settings.SetOauthClient(*oauthClientSettings)
 
-	// Construct the full URL - ensure no double slashes
-	apiURL := s.oktaDomain
-	if !strings.HasSuffix(apiURL, "/") {
-		apiURL += "/"
-	}
-	apiURL += "api/v1/apps"
+	app := okta.NewOpenIdConnectApplication(*credentials, "oidc_client", *settings, "OPENID_CONNECT", request.Body.Id)
 
-	resp, err := s.restClient.R().
-		SetBody(app).
-		SetResult(&createdApp).
-		Post(apiURL)
+	// Create the application - wrap in union type
+	appUnion := okta.OpenIdConnectApplicationAsListApplications200ResponseInner(app)
+
+	createdAppUnion, resp, err := s.oktaClient.GetApplicationAPI().
+		CreateApplication(ctx).
+		Application(appUnion).
+		Execute()
 
 	if err != nil {
-		return portalv1.CreateOAuthApplication500JSONResponse(unwrapError(resp, err)), nil
+		return portalv1.CreateOAuthApplication500JSONResponse(unwrapSDKError(resp.Response, err)), nil
 	}
 
-	if resp.IsError() {
-		// Log the response for debugging
-		oktaErr := resp.Error().(*OktaError)
-		return portalv1.CreateOAuthApplication500JSONResponse(portalv1.Error{
-			Code:    resp.StatusCode(),
-			Message: fmt.Sprintf("Okta API Error: %s", oktaErr.ErrorSummary),
-			Reason:  fmt.Sprintf("[%s] %s - Status: %d, Body: %s", oktaErr.ErrorCode, oktaErr.ErrorSummary, resp.StatusCode(), string(resp.Body())),
-		}), nil
+	// Extract the OpenIdConnectApplication from the union type
+	if createdAppUnion == nil || createdAppUnion.OpenIdConnectApplication == nil {
+		return portalv1.CreateOAuthApplication500JSONResponse(newPortal500Error("unexpected application type returned")), nil
 	}
+
+	oidcApp := createdAppUnion.OpenIdConnectApplication
 
 	clientId := ""
 	clientSecret := ""
-	if createdApp.Credentials != nil && createdApp.Credentials.OAuthClient != nil {
-		clientId = createdApp.Credentials.OAuthClient.ClientId
-		clientSecret = createdApp.Credentials.OAuthClient.ClientSecret
+	clientName := request.Body.Id
+
+	creds := oidcApp.GetCredentials()
+	if oauthCreds, ok := creds.GetOauthClientOk(); ok && oauthCreds != nil {
+		if id, ok := oauthCreds.GetClientIdOk(); ok && id != nil {
+			clientId = *id
+		}
+		if secret, ok := oauthCreds.GetClientSecretOk(); ok && secret != nil {
+			clientSecret = *secret
+		}
 	}
 
 	return portalv1.CreateOAuthApplication201JSONResponse{
 		ClientId:     clientId,
 		ClientSecret: clientSecret,
-		ClientName:   &createdApp.Label,
+		ClientName:   &clientName,
 	}, nil
 }
 
 // DeleteOAuthApplication deletes a client in Okta by ID.
 func (s *StrictServerHandler) DeleteOAuthApplication(
-	_ context.Context,
+	ctx context.Context,
 	request portalv1.DeleteOAuthApplicationRequestObject,
 ) (portalv1.DeleteOAuthApplicationResponseObject, error) {
 	if len(request.Id) == 0 {
@@ -157,64 +127,56 @@ func (s *StrictServerHandler) DeleteOAuthApplication(
 	}
 
 	// First, find the application by searching for apps with matching label
-	var apps []OktaApplication
-
-	// Construct search URL
-	searchURL := s.oktaDomain
-	if !strings.HasSuffix(searchURL, "/") {
-		searchURL += "/"
-	}
-	searchURL += "api/v1/apps"
-
-	// Try to find the application - Okta search can be tricky, so try multiple approaches
-	searchResp, err := s.restClient.R().
-		SetResult(&apps).
-		Get(searchURL)
-
-	// For debugging, let's also try with query param in case that works better
-	if err != nil {
-		apps = []OktaApplication{} // Reset
-		searchResp, err = s.restClient.R().
-			SetQueryParam("q", request.Id).
-			SetResult(&apps).
-			Get(searchURL)
-	}
+	apps, resp, err := s.oktaClient.GetApplicationAPI().
+		ListApplications(ctx).
+		Execute()
 
 	if err != nil {
-		return portalv1.DeleteOAuthApplication500JSONResponse(unwrapError(searchResp, err)), nil
-	}
-
-	if searchResp.IsError() {
-		return portalv1.DeleteOAuthApplication500JSONResponse(unwrapError(searchResp, nil)), nil
+		return portalv1.DeleteOAuthApplication500JSONResponse(unwrapSDKError(resp.Response, err)), nil
 	}
 
 	// Find the app with matching label, name, ID, or client ID
-	var targetApp *OktaApplication
-	var foundApps []string
+	var targetAppId string
 
-	for _, app := range apps {
-		clientId := ""
-		if app.Credentials != nil && app.Credentials.OAuthClient != nil {
-			clientId = app.Credentials.OAuthClient.ClientId
+	for _, appUnion := range apps {
+		var appId string
+		var appLabel string
+		var appName string
+		var clientId string
+
+		// Try OpenIdConnectApplication
+		if appUnion.OpenIdConnectApplication != nil {
+			app := appUnion.OpenIdConnectApplication
+			if id, ok := app.GetIdOk(); ok && id != nil {
+				appId = *id
+			}
+			if label, ok := app.GetLabelOk(); ok && label != nil {
+				appLabel = *label
+			}
+			if name, ok := app.GetNameOk(); ok && name != nil {
+				appName = *name
+			}
+			creds := app.GetCredentials()
+			if oauthCreds, ok := creds.GetOauthClientOk(); ok && oauthCreds != nil {
+				if id, ok := oauthCreds.GetClientIdOk(); ok && id != nil {
+					clientId = *id
+				}
+			}
 		}
 
-		foundApps = append(foundApps, fmt.Sprintf("ID: %s, Name: %s, Label: %s, ClientId: %s",
-			app.Id, app.Name, app.Label, clientId))
-
 		// Try matching by label, name, internal ID, or OAuth client ID
-		if app.Label == request.Id ||
-			app.Name == request.Id ||
-			app.Id == request.Id ||
+		if appLabel == request.Id ||
+			appName == request.Id ||
+			appId == request.Id ||
 			clientId == request.Id {
-			targetApp = &app
+			targetAppId = appId
 			break
 		}
 	}
 
-	if targetApp == nil {
-		// Return detailed error with found applications for debugging
-		reason := fmt.Sprintf("Application '%s' not found. Found %d applications: [%s]",
-			request.Id, len(apps), strings.Join(foundApps, "; "))
+	if targetAppId == "" {
+		reason := fmt.Sprintf("Application '%s' not found. Found %d applications",
+			request.Id, len(apps))
 		return portalv1.DeleteOAuthApplication404JSONResponse(portalv1.Error{
 			Code:    404,
 			Message: "Not Found",
@@ -223,14 +185,9 @@ func (s *StrictServerHandler) DeleteOAuthApplication(
 	}
 
 	// Step 1: Deactivate the application first (Okta requires this before deletion)
-	deactivateURL := s.oktaDomain
-	if !strings.HasSuffix(deactivateURL, "/") {
-		deactivateURL += "/"
-	}
-	deactivateURL += "api/v1/apps/" + targetApp.Id + "/lifecycle/deactivate"
-
-	deactivateResp, err := s.restClient.R().
-		Post(deactivateURL)
+	_, err = s.oktaClient.GetApplicationAPI().
+		DeactivateApplication(ctx, targetAppId).
+		Execute()
 
 	if err != nil {
 		return portalv1.DeleteOAuthApplication500JSONResponse(portalv1.Error{
@@ -240,60 +197,28 @@ func (s *StrictServerHandler) DeleteOAuthApplication(
 		}), nil
 	}
 
-	if deactivateResp.IsError() {
-		return portalv1.DeleteOAuthApplication500JSONResponse(portalv1.Error{
-			Code:    deactivateResp.StatusCode(),
-			Message: "Failed to deactivate application",
-			Reason:  fmt.Sprintf("Okta deactivate failed - Status: %d, Body: %s", deactivateResp.StatusCode(), string(deactivateResp.Body())),
-		}), nil
-	}
-
 	// Step 2: Now delete the deactivated application
-	deleteURL := s.oktaDomain
-	if !strings.HasSuffix(deleteURL, "/") {
-		deleteURL += "/"
-	}
-	deleteURL += "api/v1/apps/" + targetApp.Id
-
-	resp, err := s.restClient.R().
-		Delete(deleteURL)
+	deleteResp, err := s.oktaClient.GetApplicationAPI().
+		DeleteApplication(ctx, targetAppId).
+		Execute()
 
 	if err != nil {
-		return portalv1.DeleteOAuthApplication500JSONResponse(unwrapError(resp, err)), nil
-	}
-
-	if resp.IsError() {
-		switch resp.StatusCode() {
-		case 404:
-			return portalv1.DeleteOAuthApplication404JSONResponse(unwrapError(resp, nil)), nil
-		default:
-			return portalv1.DeleteOAuthApplication500JSONResponse(unwrapError(resp, nil)), nil
-		}
+		return portalv1.DeleteOAuthApplication500JSONResponse(unwrapSDKError(deleteResp.Response, err)), nil
 	}
 
 	return portalv1.DeleteOAuthApplication204Response{}, nil
 }
 
-func unwrapError(resp *resty.Response, err error) portalv1.Error {
+func unwrapSDKError(resp *http.Response, err error) portalv1.Error {
 	if err != nil {
-		var respErr *resty.ResponseError
-		if ok := errors.As(err, &respErr); ok {
+		if resp != nil {
 			return portalv1.Error{
-				Code:    respErr.Response.StatusCode(),
-				Message: respErr.Response.Status(),
-				Reason:  respErr.Error(),
+				Code:    resp.StatusCode,
+				Message: resp.Status,
+				Reason:  err.Error(),
 			}
 		}
 		return newPortal500Error(err.Error())
-	}
-
-	if resp != nil && resp.Error() != nil {
-		oktaErr := resp.Error().(*OktaError)
-		return portalv1.Error{
-			Code:    resp.StatusCode(),
-			Message: oktaErr.ErrorSummary,
-			Reason:  fmt.Sprintf("[%s] %s", oktaErr.ErrorCode, oktaErr.ErrorSummary),
-		}
 	}
 
 	return newPortal500Error("unknown error occurred")

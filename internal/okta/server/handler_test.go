@@ -3,70 +3,77 @@ package server_test
 import (
 	"context"
 
-	resty "github.com/go-resty/resty/v2"
-	"github.com/jarcoal/httpmock"
+	"github.com/okta/okta-sdk-golang/v5/okta"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"go.uber.org/mock/gomock"
 
 	"github.com/solo-io/gloo-portal-idp-connect/internal/okta/server"
+	mock_server "github.com/solo-io/gloo-portal-idp-connect/internal/okta/server/mock"
 	portalv1 "github.com/solo-io/gloo-portal-idp-connect/pkg/api/v1"
 )
 
 var _ = Describe("Server", func() {
 
 	const (
-		oktaDomain = "https://dev-123456.okta.com"
-		apiToken   = "test-api-token"
-
 		applicationClientId     = "test-client-id"
 		applicationClientSecret = "test-client-secret"
 		applicationId           = "0oa1234567890abcdef"
 	)
 
 	var (
-		s   *server.StrictServerHandler
-		ctx context.Context
-
-		dummyApp = server.OktaApplication{
-			Id:         applicationId,
-			Name:       "oidc_client",
-			Label:      applicationClientId,
-			SignOnMode: "OPENID_CONNECT",
-			Credentials: &server.OktaCredentials{
-				OAuthClient: &server.OktaOAuthClient{
-					ClientId:     applicationClientId,
-					ClientSecret: applicationClientSecret,
-				},
-			},
-		}
-		testToken = "test"
+		s              *server.StrictServerHandler
+		mockCtrl       *gomock.Controller
+		mockOktaClient *mock_server.MockOktaClient
+		mockAppAPI     *mock_server.MockApplicationAPI
+		ctx            context.Context
+		testToken      = "test"
 	)
 
 	BeforeEach(func() {
+		mockCtrl = gomock.NewController(GinkgoT())
+		mockOktaClient = mock_server.NewMockOktaClient(mockCtrl)
+		mockAppAPI = mock_server.NewMockApplicationAPI(mockCtrl)
 		ctx = context.Background()
 
-		var restyClient = resty.New()
-		httpmock.ActivateNonDefault(restyClient.GetClient())
+		mockOktaClient.EXPECT().GetApplicationAPI().Return(mockAppAPI).AnyTimes()
 
-		s = server.NewStrictServerHandler(&server.Options{
-			OktaDomain: oktaDomain,
-			APIToken:   apiToken,
-		}, restyClient)
+		s = server.NewStrictServerHandler(mockOktaClient)
+	})
+
+	AfterEach(func() {
+		mockCtrl.Finish()
 	})
 
 	Context("Application", func() {
 
 		When("no client exists", func() {
 
-			BeforeEach(func() {
-				newClientResponder, _ := httpmock.NewJsonResponder(200, dummyApp)
-				httpmock.RegisterResponder("POST", oktaDomain+"/api/v1/apps", newClientResponder)
-
-				getClientResponder, _ := httpmock.NewJsonResponder(200, []server.OktaApplication{})
-				httpmock.RegisterResponder("GET", oktaDomain+"/api/v1/apps?q=non-existing-client", getClientResponder)
-			})
-
 			It("can create a client", func() {
+				// Create expected application
+				credentials := okta.NewOAuthApplicationCredentials()
+				oauthClient := okta.NewApplicationCredentialsOAuthClient()
+				oauthClient.SetClientId(applicationClientId)
+				oauthClient.SetClientSecret(applicationClientSecret)
+				credentials.SetOauthClient(*oauthClient)
+
+				app := okta.NewOpenIdConnectApplication(
+					*credentials,
+					"oidc_client",
+					*okta.NewOpenIdConnectApplicationSettings(),
+					"OPENID_CONNECT",
+					applicationClientId,
+				)
+				app.SetId(applicationId)
+
+				appUnion := okta.OpenIdConnectApplicationAsListApplications200ResponseInner(app)
+
+				mockCreateReq := mock_server.NewMockApiCreateApplicationRequest(mockCtrl)
+				mockCreateReq.EXPECT().Application(gomock.Any()).Return(mockCreateReq)
+				mockCreateReq.EXPECT().Execute().Return(&appUnion, &okta.APIResponse{}, nil)
+
+				mockAppAPI.EXPECT().CreateApplication(ctx).Return(mockCreateReq)
+
 				resp, err := s.CreateOAuthApplication(ctx, portalv1.CreateOAuthApplicationRequestObject{
 					Body: &portalv1.CreateOAuthApplicationJSONRequestBody{
 						Id: applicationClientId,
@@ -103,6 +110,11 @@ var _ = Describe("Server", func() {
 			})
 
 			It("returns not found code on deletion", func() {
+				mockListReq := mock_server.NewMockApiListApplicationsRequest(mockCtrl)
+				mockListReq.EXPECT().Execute().Return([]okta.ListApplications200ResponseInner{}, &okta.APIResponse{}, nil)
+
+				mockAppAPI.EXPECT().ListApplications(ctx).Return(mockListReq)
+
 				resp, err := s.DeleteOAuthApplication(ctx, portalv1.DeleteOAuthApplicationRequestObject{
 					Id: "non-existing-client",
 					Params: portalv1.DeleteOAuthApplicationParams{
@@ -117,15 +129,41 @@ var _ = Describe("Server", func() {
 		})
 
 		When("client exists", func() {
-			BeforeEach(func() {
-				getClientResponder, _ := httpmock.NewJsonResponder(200, []server.OktaApplication{dummyApp})
-				httpmock.RegisterResponder("GET", oktaDomain+"/api/v1/apps?q="+applicationClientId, getClientResponder)
+			var dummyApp *okta.OpenIdConnectApplication
 
-				deleteClientResponder, _ := httpmock.NewJsonResponder(204, nil)
-				httpmock.RegisterResponder("DELETE", oktaDomain+"/api/v1/apps/"+applicationId, deleteClientResponder)
+			BeforeEach(func() {
+				credentials := okta.NewOAuthApplicationCredentials()
+				oauthClient := okta.NewApplicationCredentialsOAuthClient()
+				oauthClient.SetClientId(applicationClientId)
+				oauthClient.SetClientSecret(applicationClientSecret)
+				credentials.SetOauthClient(*oauthClient)
+
+				dummyApp = okta.NewOpenIdConnectApplication(
+					*credentials,
+					"oidc_client",
+					*okta.NewOpenIdConnectApplicationSettings(),
+					"OPENID_CONNECT",
+					applicationClientId,
+				)
+				dummyApp.SetId(applicationId)
 			})
 
 			It("can delete the client", func() {
+				appUnion := okta.OpenIdConnectApplicationAsListApplications200ResponseInner(dummyApp)
+
+				mockListReq := mock_server.NewMockApiListApplicationsRequest(mockCtrl)
+				mockListReq.EXPECT().Execute().Return([]okta.ListApplications200ResponseInner{appUnion}, &okta.APIResponse{}, nil)
+
+				mockDeactivateReq := mock_server.NewMockApiDeactivateApplicationRequest(mockCtrl)
+				mockDeactivateReq.EXPECT().Execute().Return(&okta.APIResponse{}, nil)
+
+				mockDeleteReq := mock_server.NewMockApiDeleteApplicationRequest(mockCtrl)
+				mockDeleteReq.EXPECT().Execute().Return(&okta.APIResponse{}, nil)
+
+				mockAppAPI.EXPECT().ListApplications(ctx).Return(mockListReq)
+				mockAppAPI.EXPECT().DeactivateApplication(ctx, applicationId).Return(mockDeactivateReq)
+				mockAppAPI.EXPECT().DeleteApplication(ctx, applicationId).Return(mockDeleteReq)
+
 				resp, err := s.DeleteOAuthApplication(ctx, portalv1.DeleteOAuthApplicationRequestObject{
 					Id: applicationClientId,
 					Params: portalv1.DeleteOAuthApplicationParams{

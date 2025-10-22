@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/okta/okta-sdk-golang/v5/okta"
@@ -212,11 +213,20 @@ func (s *StrictServerHandler) DeleteOAuthApplication(
 
 func unwrapSDKError(resp *http.Response, err error) portalv1.Error {
 	if err != nil {
-		if resp != nil {
+		errorMsg := err.Error()
+		
+		// Try to read the response body for more details
+		if resp != nil && resp.Body != nil {
+			body, readErr := io.ReadAll(resp.Body)
+			if readErr == nil && len(body) > 0 {
+				// Include the response body in the error message for debugging
+				errorMsg = fmt.Sprintf("%s - Response body: %s", err.Error(), string(body))
+			}
+			
 			return portalv1.Error{
 				Code:    resp.StatusCode,
 				Message: resp.Status,
-				Reason:  err.Error(),
+				Reason:  errorMsg,
 			}
 		}
 		return newPortal500Error(err.Error())

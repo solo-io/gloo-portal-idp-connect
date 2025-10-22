@@ -21,5 +21,9 @@ gloo-portal-idp-connect args command
   - --issuer={{ .Values.keycloak.realm }}
   - --client-id={{ .Values.keycloak.mgmtClientId }}
   - --client-secret={{ .Values.keycloak.mgmtClientSecret }}
+{{- else if eq .Values.connector "okta"}}
+  - okta
+  - --port=8080
+  - --okta-domain={{ .Values.okta.domain }}
 {{- end }}
 {{- end }}

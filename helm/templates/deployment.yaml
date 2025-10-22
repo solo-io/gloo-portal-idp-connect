@@ -44,6 +44,13 @@ spec:
                   name: {{ .Values.cognito.aws.secretName }}
                   key: sessionToken
           {{- end }}
+        {{- else if eq .Values.connector "okta"}}
+        env:
+          - name: OKTA_API_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.okta.secretName }}
+                key: apiToken
         {{- end }}
         resources:
           requests:

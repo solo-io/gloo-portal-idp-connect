@@ -77,7 +77,7 @@ func (s *StrictServerHandler) CreateOAuthApplication(
 	oauthClientSettings.SetIssuerMode("ORG_URL")
 	settings.SetOauthClient(*oauthClientSettings)
 
-	app := okta.NewOpenIdConnectApplication(*credentials, "oidc_client", *settings, "OPENID_CONNECT", request.Body.Id)
+	app := okta.NewOpenIdConnectApplication(*credentials, "oidc_client", *settings, request.Body.Id, "OPENID_CONNECT")
 
 	// Create the application - wrap in union type
 	appUnion := okta.OpenIdConnectApplicationAsListApplications200ResponseInner(app)
@@ -214,7 +214,7 @@ func (s *StrictServerHandler) DeleteOAuthApplication(
 func unwrapSDKError(resp *http.Response, err error) portalv1.Error {
 	if err != nil {
 		errorMsg := err.Error()
-		
+
 		// Try to read the response body for more details
 		if resp != nil && resp.Body != nil {
 			body, readErr := io.ReadAll(resp.Body)
@@ -222,7 +222,7 @@ func unwrapSDKError(resp *http.Response, err error) portalv1.Error {
 				// Include the response body in the error message for debugging
 				errorMsg = fmt.Sprintf("%s - Response body: %s", err.Error(), string(body))
 			}
-			
+
 			return portalv1.Error{
 				Code:    resp.StatusCode,
 				Message: resp.Status,

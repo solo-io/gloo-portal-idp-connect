@@ -61,8 +61,8 @@ var _ = Describe("Server", func() {
 					*credentials,
 					"oidc_client",
 					*okta.NewOpenIdConnectApplicationSettings(),
-					"OPENID_CONNECT",
 					applicationClientId,
+					"OPENID_CONNECT",
 				)
 				app.SetId(applicationId)
 
@@ -142,8 +142,8 @@ var _ = Describe("Server", func() {
 					*credentials,
 					"oidc_client",
 					*okta.NewOpenIdConnectApplicationSettings(),
-					"OPENID_CONNECT",
 					applicationClientId,
+					"OPENID_CONNECT",
 				)
 				dummyApp.SetId(applicationId)
 			})

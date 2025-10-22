@@ -16,10 +16,6 @@ func newPortal400Error(reason string) portalv1.Error {
 	return newPortalError(400, "Bad Request", reason)
 }
 
-func newPortal404Error(reason string) portalv1.Error {
-	return newPortalError(404, "Not Found", reason)
-}
-
 func newPortal500Error(reason string) portalv1.Error {
 	return newPortalError(500, "Internal Server Error", reason)
 }

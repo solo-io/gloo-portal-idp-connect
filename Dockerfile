@@ -10,7 +10,7 @@ RUN mkdir -p out
 
 RUN go build -o out/idp-connect ./cmd
 
-FROM ubuntu:24.04
+FROM ubuntu:24.10
 
 COPY --from=builder /root/out/idp-connect /app/idp-connect
 

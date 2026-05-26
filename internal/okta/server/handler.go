@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/okta/okta-sdk-golang/v5/okta"
+	"github.com/okta/okta-sdk-golang/v6/okta"
 	portalv1 "github.com/solo-io/gloo-portal-idp-connect/pkg/api/v1"
 )
 
@@ -68,8 +68,7 @@ func (s *StrictServerHandler) CreateOAuthApplication(
 
 	// Set settings
 	settings := okta.NewOpenIdConnectApplicationSettings()
-	oauthClientSettings := okta.NewOpenIdConnectApplicationSettingsClient()
-	oauthClientSettings.SetGrantTypes([]string{"client_credentials"})
+	oauthClientSettings := okta.NewOpenIdConnectApplicationSettingsClient([]string{"client_credentials"})
 	// Note: response_types is not needed for client_credentials grant type
 	// It's only used for authorization flows with redirects
 	oauthClientSettings.SetApplicationType("service")

@@ -13,7 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	okta "github.com/okta/okta-sdk-golang/v5/okta"
+	okta "github.com/okta/okta-sdk-golang/v6/okta"
 	server "github.com/solo-io/gloo-portal-idp-connect/internal/okta/server"
 	gomock "go.uber.org/mock/gomock"
 )

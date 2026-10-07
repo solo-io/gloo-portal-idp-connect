@@ -1,4 +1,4 @@
-FROM golang:1.24 as builder
+FROM golang:1.24 AS builder
 
 WORKDIR /root
 
@@ -8,14 +8,13 @@ RUN make vendor
 
 RUN mkdir -p out
 
-RUN go build -o out/idp-connect ./cmd
+# Static binary (no cgo) so the distroless runtime below needs no libc.
+RUN CGO_ENABLED=0 go build -o out/idp-connect ./cmd
 
-FROM ubuntu:24.04
+# Distroless runtime: ships CA certificates and tzdata only, no shell or package manager, and runs as
+# the nonroot user (uid 65532).
+FROM cgr.dev/chainguard/static:latest
 
 COPY --from=builder /root/out/idp-connect /app/idp-connect
-
-RUN apt-get update && \
-  apt-get install --no-install-recommends -y \
-  ca-certificates
 
 ENTRYPOINT ["/app/idp-connect"]

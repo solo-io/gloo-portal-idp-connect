@@ -12,7 +12,7 @@ jobs:
     outputs:
       version: ${{ steps.set_version.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - id: set_version
         run: |
           # In order to publish Helm charts we need valid semantic version, so we get the latest release tag to prefix the version with.
@@ -30,17 +30,17 @@ jobs:
     needs: [set-version]
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@a37ce9120846195fa4ece8f58b268e6043cb2f26 # v3.7.0
 
       - name: Gcloud Auth
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2.1.13
         with:
           credentials_json: ${{ secrets.ARTIFACT_PUSHER_JSON_KEY }}
           project_id: gloo-mesh
           create_credentials_file: true
 
       - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
+        uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f # v2.2.1
         with:
           version: 416.0.0
 
@@ -56,21 +56,21 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.4.0
+        uses: styfle/cancel-workflow-action@ee9e0f86fb1a4d7029390154477333bf53e41c5e # 0.4.0
         with:
           access_token: ${{ github.token }}
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@a37ce9120846195fa4ece8f58b268e6043cb2f26 # v3.7.0
 
       - name: Gcloud Auth
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2.1.13
         with:
           credentials_json: ${{ secrets.GLOO_RELEASE_ADMIN }}
           project_id: gloo-mesh
           create_credentials_file: true
 
       - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
+        uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f # v2.2.1
         with:
           version: 416.0.0
 
